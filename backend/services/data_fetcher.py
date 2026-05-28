@@ -274,12 +274,11 @@ def fetch_financial_data(code: str) -> Dict[int, Dict[str, float]]:
         else:
             logger.info("Cache expired for %s", code)
 
-    # Fetch from multiple sources and merge
+    # Fetch from fast sources and merge
     abstract_data = _fetch_financial_abstract(code)
-    balance_data = _fetch_balance_sheet_items(code)
     ths_data = _try_ths_abstract(code)
 
-    annual = _merge_annual_data(abstract_data or {}, balance_data or {}, ths_data or {})
+    annual = _merge_annual_data(abstract_data or {}, ths_data or {})
 
     if len(annual) < 1:
         conn.close()
