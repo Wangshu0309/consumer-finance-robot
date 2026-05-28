@@ -16,5 +16,10 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
+# Environment
+.env
+.env.local
+.env.*.local
+
 # Data cache
 backend/cache.db
