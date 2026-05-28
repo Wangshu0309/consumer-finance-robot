@@ -20,6 +20,7 @@ CACHE_TTL_DAYS = 7
 
 def _get_cache() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.execute(
         "CREATE TABLE IF NOT EXISTS annual_data ("
         "  code TEXT PRIMARY KEY,"
@@ -36,7 +37,7 @@ def normalize_code(code: str) -> str:
     for prefix in ("SH", "SZ", "BJ"):
         if code.startswith(prefix):
             code = code[len(prefix):]
-    for suffix in (".SH", ".SZ", ".BJ", ".SS", ".SZ"):
+    for suffix in (".SH", ".SZ", ".BJ", ".SS"):
         if code.endswith(suffix):
             code = code[:-len(suffix)]
     code = re.sub(r"[^0-9]", "", code)
@@ -57,7 +58,8 @@ def _fetch_via_indicator(code: str) -> Optional[pd.DataFrame]:
         if "日期" in df.columns:
             df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
         return df
-    except Exception:
+    except Exception as e:
+        logger.warning("stock_financial_analysis_indicator failed for %s: %s", code, e)
         return None
 
 
@@ -84,7 +86,8 @@ def _fetch_via_abstract(code: str) -> Optional[pd.DataFrame]:
         if "日期" in df.columns:
             df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
         return df
-    except Exception:
+    except Exception as e:
+        logger.warning("stock_financial_abstract_ths failed for %s: %s", code, e)
         return None
 
 
@@ -149,7 +152,8 @@ def fetch_stock_name(code: str) -> str:
             for key in ("股票简称", "股票代码"):
                 if key in row.index:
                     return str(row.loc[key, "value"]).strip()
-    except Exception:
+    except Exception as e:
+        logger.warning("stock_individual_info_em failed for %s: %s", code, e)
         pass
     return ""
 
@@ -167,7 +171,9 @@ def fetch_financial_data(code: str) -> Dict[int, Dict[str, float]]:
         updated_dt = datetime.fromisoformat(updated_at)
         if datetime.now() - updated_dt < timedelta(days=CACHE_TTL_DAYS):
             logger.info("Cache hit for %s", code)
-            return {int(k): v for k, v in json.loads(data_json).items()}
+            result = {int(k): v for k, v in json.loads(data_json).items()}
+            conn.close()
+            return result
         else:
             logger.info("Cache expired for %s", code)
 
@@ -179,9 +185,15 @@ def fetch_financial_data(code: str) -> Dict[int, Dict[str, float]]:
             if len(annual) >= 1:
                 # Cache it
                 name = fetch_stock_name(code)
+                cache_data = {}
+                for k, v in annual.items():
+                    entry = {}
+                    for mk, mv in v.items():
+                        entry[mk] = None if (isinstance(mv, float) and np.isnan(mv)) else mv
+                    cache_data[str(k)] = entry
                 conn.execute(
                     "INSERT OR REPLACE INTO annual_data (code, data, stock_name, updated_at) VALUES (?, ?, ?, ?)",
-                    (code, json.dumps({str(k): v for k, v in annual.items()}), name, datetime.now().isoformat()),
+                    (code, json.dumps(cache_data), name, datetime.now().isoformat()),
                 )
                 conn.commit()
                 conn.close()
