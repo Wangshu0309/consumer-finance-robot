@@ -4,16 +4,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: { DEFAULT: '#2563eb', light: '#3b82f6' },
-        danger: { DEFAULT: '#dc2626', bg: '#fef2f2' },
-        success: { DEFAULT: '#16a34a', bg: '#f0fdf4' },
-        warning: { DEFAULT: '#ea580c', bg: '#fff7ed' },
+        surface: {
+          DEFAULT: '#141826',
+          elevated: '#1a1f33',
+          overlay: 'rgba(20, 24, 38, 0.85)',
+        },
+        gold: {
+          DEFAULT: '#c9a84c',
+          light: '#dfc278',
+          dim: '#8b7535',
+        },
+        text: {
+          primary: '#e8e4d9',
+          secondary: '#8b877d',
+          muted: '#5c5952',
+        },
+        danger: { DEFAULT: '#f87171', muted: '#7f1d1d' },
+        success: { DEFAULT: '#4ade80', muted: '#14532d' },
+        warning: { DEFAULT: '#fb923c', muted: '#7c2d12' },
       },
       fontFamily: {
-        sans: [
-          '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"PingFang SC"',
-          '"Hiragino Sans GB"', '"Microsoft YaHei"', '"Helvetica Neue"', 'Arial', 'sans-serif',
-        ],
+        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        sans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
       },
     },
   },

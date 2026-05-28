@@ -9,29 +9,144 @@
   }
 
   body {
-    @apply text-gray-800 leading-relaxed;
+    @apply text-text-primary leading-relaxed;
+    background-color: #06080d;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(201, 168, 76, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 85% 20%, rgba(201, 168, 76, 0.03) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='0.5' fill='%238b877d' fill-opacity='0.08'/%3E%3C/svg%3E");
   }
 }
 
 @layer components {
+  .card {
+    @apply bg-surface border border-white/[0.06] rounded-2xl backdrop-blur-sm;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-gold {
+    @apply card;
+    border-color: rgba(201, 168, 76, 0.15);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(201, 168, 76, 0.08) inset;
+  }
+
   .prob-number {
-    font-size: 96px;
-    font-weight: 800;
-    line-height: 1.1;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 120px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prob-number-smaller {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 1;
     letter-spacing: -2px;
   }
 
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #dfc278 0%, #c9a84c 40%, #8b7535 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gold-progress {
+    background: linear-gradient(90deg, #8b7535, #c9a84c, #dfc278);
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+  }
+
+  .green-progress {
+    background: linear-gradient(90deg, #15803d, #4ade80);
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+  }
+
+  .amber-progress {
+    background: linear-gradient(90deg, #92400e, #fb923c);
+    box-shadow: 0 0 12px rgba(251, 146, 60, 0.3);
+  }
+
+  .red-progress {
+    background: linear-gradient(90deg, #991b1b, #f87171);
+    box-shadow: 0 0 12px rgba(248, 113, 113, 0.3);
+  }
+
   .warning-card {
-    @apply bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg p-4 text-red-900 text-sm leading-relaxed;
+    @apply rounded-xl p-5 text-sm leading-relaxed;
+    background: rgba(127, 29, 29, 0.25);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-left: 3px solid #f87171;
+    color: #fca5a5;
+  }
+
+  .warning-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 0% 50%, rgba(248, 113, 113, 0.08), transparent 70%);
+    pointer-events: none;
   }
 
   .safe-badge {
-    @apply bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-green-700 text-sm font-medium;
+    @apply rounded-xl px-5 py-4 text-sm font-medium text-center;
+    background: rgba(20, 83, 45, 0.25);
+    border: 1px solid rgba(74, 222, 128, 0.15);
+    color: #86efac;
+  }
+
+  .insufficient-badge {
+    @apply rounded-xl px-5 py-4 text-sm;
+    background: rgba(124, 45, 18, 0.25);
+    border: 1px solid rgba(251, 146, 60, 0.15);
+    color: #fdba74;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.6s ease-out both;
+  }
+
+  .fade-in-delay-1 { animation-delay: 0.1s; }
+  .fade-in-delay-2 { animation-delay: 0.2s; }
+  .fade-in-delay-3 { animation-delay: 0.3s; }
+  .fade-in-delay-4 { animation-delay: 0.4s; }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+    50% { box-shadow: 0 0 20px 4px rgba(201, 168, 76, 0.25); }
+  }
+
+  .animate-pulse-gold {
+    animation: pulse-gold 2s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
 @media (max-width: 520px) {
   .prob-number {
-    font-size: 64px;
+    font-size: 72px;
+    letter-spacing: -2px;
+  }
+  .prob-number-smaller {
+    font-size: 56px;
   }
 }

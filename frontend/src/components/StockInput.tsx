@@ -10,43 +10,50 @@ export default function StockInput({ onAnalyze, disabled }: StockInputProps) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onAnalyze(value);
+    if (!disabled && value.trim()) onAnalyze(value);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onAnalyze(value);
+      if (!disabled && value.trim()) onAnalyze(value);
     }
   };
 
   return (
-    <section className="bg-white rounded-xl shadow-lg p-7">
+    <section className="card-gold p-6">
       <form onSubmit={handleSubmit} className="flex gap-3">
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="请输入股票代码（如 600519）"
+          placeholder="输入股票代码，如 600519"
           autoComplete="off"
           autoFocus
           disabled={disabled}
-          className="flex-1 px-4 py-3 text-base border-2 border-gray-200 rounded-lg outline-none
-                     transition-colors focus:border-primary disabled:opacity-50
-                     placeholder:text-gray-400"
+          className="flex-1 px-5 py-3.5 text-base bg-[#0a0d16] border border-white/[0.08] rounded-xl
+                     text-text-primary outline-none transition-all duration-200
+                     placeholder:text-text-muted
+                     focus:border-gold/40 focus:bg-[#0c0f1a]
+                     disabled:opacity-40 disabled:cursor-not-allowed"
         />
         <button
           type="submit"
           disabled={disabled}
-          className="px-7 py-3 text-base font-semibold text-white bg-primary rounded-lg
-                     hover:bg-primary-light active:scale-97 transition-all
-                     disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+          className="px-8 py-3.5 text-sm font-semibold tracking-wide rounded-xl
+                     bg-gold text-[#0a0d16] transition-all duration-200
+                     hover:bg-gold-light hover:shadow-[0_0_24px_rgba(201,168,76,0.25)]
+                     active:scale-[0.97]
+                     disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gold
+                     whitespace-nowrap"
         >
           开始分析
         </button>
       </form>
-      <p className="mt-2.5 text-xs text-gray-400">支持沪深京 A 股代码，基于最新年报数据进行分析</p>
+      <p className="mt-3 text-xs text-text-muted">
+        支持沪深京 A 股代码 · 基于最新年报数据
+      </p>
     </section>
   );
 }

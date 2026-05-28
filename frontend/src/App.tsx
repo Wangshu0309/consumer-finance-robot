@@ -11,13 +11,19 @@ export default function App() {
   const isError = state.status === 'error';
 
   return (
-    <div className="max-w-[720px] mx-auto px-5 py-8 pb-16">
+    <div className="max-w-[760px] mx-auto px-6 py-10 pb-20">
       {/* Header */}
-      <header className="text-center py-8">
-        <h1 className="text-2xl font-extrabold text-primary tracking-wide">
-          大消费行业智能财务分析机器人
+      <header className="text-center py-10">
+        <p className="text-xs tracking-[0.25em] uppercase text-gold font-medium mb-4 font-mono">
+          Consumer &amp; Retail Intelligence
+        </p>
+        <h1 className="text-2xl font-display font-bold text-text-primary tracking-wide">
+          大消费行业智能财务分析
         </h1>
-        <p className="mt-1.5 text-sm text-gray-500">智能化投研辅助工具 · 大消费与零售制造</p>
+        <div className="mt-4 mx-auto w-12 h-[1px] bg-gradient-to-r from-transparent via-gold to-transparent" />
+        <p className="mt-3 text-sm text-text-secondary">
+          基于机器学习与财务审计规则 · 投研辅助工具
+        </p>
       </header>
 
       {/* Input */}
@@ -25,40 +31,55 @@ export default function App() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="text-center py-12">
-          <div className="w-10 h-10 mx-auto mb-4 border-4 border-gray-200 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm text-gray-500">正在获取财务数据并运行分析...</p>
+        <div className="text-center py-16">
+          <div className="relative mx-auto w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-2 border-gold/20" />
+            <div className="absolute inset-2 rounded-full border-2 border-t-gold border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+            <div className="absolute inset-4 rounded-full border border-gold/10 animate-pulse-gold" />
+          </div>
+          <p className="mt-6 text-sm text-text-muted tracking-wide">正在获取财务数据并运行分析</p>
         </div>
       )}
 
       {/* Error */}
       {isError && (
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-red-600 text-sm">
+        <div className="mt-6 card border-danger/20 bg-[rgba(127,29,29,0.15)] px-5 py-4 text-sm text-danger">
           {state.message}
         </div>
       )}
 
       {/* Results */}
       {isSuccess && state.data && (
-        <div className="mt-5">
+        <div className="mt-6 space-y-4">
           {/* Stock info bar */}
-          <div className="flex items-baseline gap-3 mb-4">
-            <span className="text-lg font-bold text-gray-900">{state.data.stock_name}</span>
-            <span className="text-xs text-gray-500">{state.data.stock_code}</span>
-            <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2.5 py-0.5 rounded-full">
-              {state.data.fiscal_year} 年报
+          <div className="fade-in flex items-baseline gap-3 mb-2">
+            <span className="text-xl font-display font-bold text-text-primary tracking-wide">
+              {state.data.stock_name}
+            </span>
+            <span className="text-xs text-text-muted font-mono">{state.data.stock_code}</span>
+            <span className="ml-auto text-xs text-text-muted bg-surface-elevated border border-white/[0.04] px-3 py-1 rounded-full">
+              FY {state.data.fiscal_year}
             </span>
           </div>
 
-          <ProbDisplay data={state.data} />
-          <WarningList data={state.data} />
-          <FeatureTable features={state.data.features} />
+          <div className="fade-in fade-in-delay-1">
+            <ProbDisplay data={state.data} />
+          </div>
+          <div className="fade-in fade-in-delay-2">
+            <WarningList data={state.data} />
+          </div>
+          <div className="fade-in fade-in-delay-3">
+            <FeatureTable features={state.data.features} />
+          </div>
         </div>
       )}
 
       {/* Footer */}
-      <footer className="mt-12 text-center text-xs text-gray-400">
-        数据来源：AkShare 公开财务接口 &nbsp;|&nbsp; 分析结果仅供参考，不构成投资建议
+      <footer className="mt-16 text-center">
+        <div className="mx-auto w-24 h-[1px] bg-white/[0.06] mb-4" />
+        <p className="text-xs text-text-muted">
+          数据来源：AkShare 公开财务接口 &nbsp;·&nbsp; 分析结果仅供参考，不构成投资建议
+        </p>
       </footer>
     </div>
   );
