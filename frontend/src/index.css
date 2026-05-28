@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply text-gray-800 leading-relaxed;
+  }
+}
+
+@layer components {
+  .prob-number {
+    font-size: 96px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -2px;
+  }
+
+  .warning-card {
+    @apply bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg p-4 text-red-900 text-sm leading-relaxed;
+  }
+
+  .safe-badge {
+    @apply bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-green-700 text-sm font-medium;
+  }
+}
