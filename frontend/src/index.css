@@ -29,3 +29,9 @@
     @apply bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-green-700 text-sm font-medium;
   }
 }
+
+@media (max-width: 520px) {
+  .prob-number {
+    font-size: 64px;
+  }
+}
