@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 19px;
+  }
+
+  body {
+    color: #e8e4d9;
+    line-height: 1.65;
+    background-color: #06080d;
+    background-image:
+      /* top-center warm glow */
+      radial-gradient(circle at 50% 0%, rgba(201, 168, 76, 0.07) 0%, transparent 55%),
+      /* right-side cool accent */
+      radial-gradient(ellipse at 85% 25%, rgba(201, 168, 76, 0.03) 0%, transparent 45%),
+      /* bottom-left subtle warmth */
+      radial-gradient(circle at 15% 85%, rgba(201, 168, 76, 0.03) 0%, transparent 50%),
+      /* dot grid */
+      url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='0.5' fill='%238b877d' fill-opacity='0.07'/%3E%3C/svg%3E"),
+      /* diamond lattice pattern */
+      url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a84c' stroke-opacity='0.03' stroke-width='0.5'%3E%3Cline x1='0' y1='60' x2='120' y2='60'/%3E%3Cline x1='60' y1='0' x2='60' y2='120'/%3E%3Cline x1='0' y1='0' x2='120' y2='120'/%3E%3Cline x1='120' y1='0' x2='0' y2='120'/%3E%3C/g%3E%3C/svg%3E");
+  }
+}
+
+@layer components {
+  .card {
+    background: #141826;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-gold {
+    background: #141826;
+    border: 1px solid rgba(201, 168, 76, 0.15);
+    border-radius: 16px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(201, 168, 76, 0.08) inset;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-gold::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 120px;
+    background: url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0 L60 0 L60 60 L0 60 Z' fill='none' stroke='%23c9a84c' stroke-opacity='0.04' stroke-width='1'/%3E%3Cpath d='M60 0 L90 0 L90 30 L60 30 Z' fill='none' stroke='%23c9a84c' stroke-opacity='0.03' stroke-width='0.5'/%3E%3Cpath d='M0 60 L30 60 L30 90 L0 90 Z' fill='none' stroke='%23c9a84c' stroke-opacity='0.03' stroke-width='0.5'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .ornament-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3) 20%, rgba(201,168,76,0.5) 50%, rgba(201,168,76,0.3) 80%, transparent);
+    border: none;
+    margin: 0;
+  }
+
+  .ornament-diamond {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .ornament-diamond::before,
+  .ornament-diamond::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3));
+  }
+
+  .ornament-diamond::after {
+    background: linear-gradient(90deg, rgba(201,168,76,0.3), transparent);
+  }
+
+  .prob-number {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 120px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prob-number-smaller {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #dfc278 0%, #c9a84c 40%, #8b7535 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gold-progress {
+    background: linear-gradient(90deg, #8b7535, #c9a84c, #dfc278);
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+  }
+
+  .green-progress {
+    background: linear-gradient(90deg, #15803d, #4ade80);
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+  }
+
+  .amber-progress {
+    background: linear-gradient(90deg, #92400e, #fb923c);
+    box-shadow: 0 0 12px rgba(251, 146, 60, 0.3);
+  }
+
+  .red-progress {
+    background: linear-gradient(90deg, #991b1b, #f87171);
+    box-shadow: 0 0 12px rgba(248, 113, 113, 0.3);
+  }
+
+  .warning-card {
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    background: rgba(127, 29, 29, 0.25);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-left: 3px solid #f87171;
+    color: #fca5a5;
+  }
+
+  .warning-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 0% 50%, rgba(248, 113, 113, 0.08), transparent 70%);
+    pointer-events: none;
+  }
+
+  .safe-badge {
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    background: rgba(20, 83, 45, 0.25);
+    border: 1px solid rgba(74, 222, 128, 0.15);
+    color: #86efac;
+  }
+
+  .insufficient-badge {
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 0.875rem;
+    background: rgba(124, 45, 18, 0.25);
+    border: 1px solid rgba(251, 146, 60, 0.15);
+    color: #fdba74;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.6s ease-out both;
+  }
+
+  .fade-in-delay-1 { animation-delay: 0.1s; }
+  .fade-in-delay-2 { animation-delay: 0.2s; }
+  .fade-in-delay-3 { animation-delay: 0.3s; }
+  .fade-in-delay-4 { animation-delay: 0.4s; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+    50%      { box-shadow: 0 0 20px 4px rgba(201, 168, 76, 0.25); }
+  }
+
+  .animate-pulse-gold {
+    animation: pulse-gold 2s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(500%); }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@media (max-width: 520px) {
+  .prob-number        { font-size: 72px; letter-spacing: -2px; }
+  .prob-number-smaller { font-size: 56px; }
+}
