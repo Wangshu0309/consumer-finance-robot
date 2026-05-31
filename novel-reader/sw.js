@@ -29,9 +29,11 @@ self.addEventListener('activate', (event) => {
 // Fetch: cache-first for static assets, network-first for everything else
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const path = url.pathname;
 
-  // Static assets: cache first
-  if (ASSETS.includes(url.pathname) || url.pathname.startsWith('./icons/')) {
+  // Static assets: cache first (match by filename suffix since path may include subdirectory)
+  const isStatic = ASSETS.some(a => path.endsWith(a.replace('./', '/'))) || path.includes('/icons/');
+  if (isStatic) {
     event.respondWith(
       caches.match(event.request).then((cached) => cached || fetch(event.request))
     );

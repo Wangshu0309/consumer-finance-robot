@@ -456,7 +456,7 @@ const Storage = {
 
   // Reading progress
   getProgress(id) { return this.get('novel_' + id + '_progress') || { chapterIndex: 0, scrollPos: 0, timestamp: 0 }; },
-  saveProgress(id, p) { return this.set('novel_' + id + '_progress', { ...p, timestamp: Date.now() }); },
+  saveProgress(id, p) { return this.set('novel_' + id + '_progress', { chapterIndex: 0, scrollPos: 0, currentPage: 0, ...p, timestamp: Date.now() }); },
 
   // Settings
   getSettings() { return this.get('novel_settings') || { theme: 'day', eyeCare: false, pageMode: 'curl', fontSize: 'md' }; },
@@ -568,6 +568,7 @@ const Bookshelf = {
       if (e.target.files[0]) this.importFile(e.target.files[0]);
       e.target.value = '';
     });
+    document.addEventListener('click', (e) => this._hideLongPress(e));
     this.render();
   },
 
@@ -699,12 +700,12 @@ const Bookshelf = {
       });
     });
 
-    // Hide delete buttons on tap outside
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.book-card')) {
-        listEl.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
-      }
-    });
+  },
+
+  _hideLongPress(e) {
+    if (!e.target.closest('.book-card')) {
+      document.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
+    }
   },
 
   _confirmDelete(bookId) {
@@ -836,6 +837,7 @@ const Reader = {
     const progress = Storage.getProgress(bookId);
     this.chapterIndex = progress.chapterIndex;
     this.currentPageStartPos = progress.scrollPos || 0;
+    this._restoredPage = progress.currentPage || 0;
 
     const settings = Storage.getSettings();
     this.applySettings(settings);
@@ -843,7 +845,7 @@ const Reader = {
     const title = this.meta.chapterTitles[this.chapterIndex] || this.meta.title;
     document.getElementById('header-title').textContent = title;
 
-    this.loadChapter(this.chapterIndex, this.currentPageStartPos);
+    this.loadChapter(this.chapterIndex, this.currentPageStartPos, this._restoredPage);
   },
 
   applySettings(settings) {
@@ -864,10 +866,10 @@ const Reader = {
     }
   },
 
-  loadChapter(chIdx, startPos = 0) {
+  loadChapter(chIdx, startPos = 0, pageNum = 0) {
     this.chapterIndex = chIdx;
     this.currentPageStartPos = startPos;
-    this.currentPage = 0;
+    this.currentPage = pageNum;
 
     const text = Storage.getBookText(this.bookId);
     const chapters = ChapterParser.parse(text);
@@ -1094,6 +1096,7 @@ const Reader = {
     Storage.saveProgress(this.bookId, {
       chapterIndex: this.chapterIndex,
       scrollPos: this.currentPageStartPos,
+      currentPage: this.currentPage,
       timestamp: Date.now(),
     });
   }
@@ -1192,6 +1195,8 @@ const Settings = {
     const s = Storage.getSettings();
     document.body.classList.toggle('night', s.theme === 'night');
     document.body.classList.toggle('eye-care', s.eyeCare);
+    document.getElementById('menu-night').textContent = s.theme === 'night' ? '☀️ 白天' : '🌙 夜间';
+    document.getElementById('menu-eye').textContent = s.eyeCare ? '🛡️ 护眼 ✓' : '🛡️ 护眼';
     if (App.currentBookId) {
       Reader.applySettings(s);
     }
