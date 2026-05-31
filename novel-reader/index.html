@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2C2C2C">
+<link rel="manifest" href="./manifest.json">
+<title>小说阅读器</title>
+<style>
+/* === CSS Reset & Variables === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-xxl: 22px;
+  --bg-page: #F5F0E8;
+  --bg-surface: #EDE8E0;
+  --bg-card: #FFFFFF;
+  --text-primary: #333333;
+  --text-secondary: #888888;
+  --text-tertiary: #AAAAAA;
+  --border-color: #DDD8D0;
+  --accent: #C9A96E;
+  --accent-light: rgba(201, 169, 110, 0.15);
+  --overlay: rgba(0,0,0,0.5);
+  --eye-care-overlay: transparent;
+  --transition: 0.3s ease;
+}
+
+body.night {
+  --bg-page: #1A1A1A;
+  --bg-surface: #222222;
+  --bg-card: #2A2A2A;
+  --text-primary: #B8B8B8;
+  --text-secondary: #7A7A7A;
+  --text-tertiary: #5A5A5A;
+  --border-color: #333333;
+  --accent: #B8944A;
+  --accent-light: rgba(184, 148, 74, 0.15);
+  --overlay: rgba(0,0,0,0.7);
+}
+
+body.eye-care::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(200, 170, 100, 0.2);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.page { display: none; position: fixed; inset: 0; overflow: hidden; }
+.page.active { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+
+<!-- Bookshelf Page -->
+<div id="bookshelf-page" class="page active">
+  <div class="shelf-header">
+    <h1 class="shelf-title">我的书架</h1>
+  </div>
+  <div id="book-list" class="book-list"></div>
+  <div id="empty-state" class="empty-state">
+    <div class="empty-icon">📚</div>
+    <p class="empty-text">书架空空如也</p>
+    <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
+  </div>
+  <div class="shelf-footer">
+    <button id="import-btn" class="btn-primary">导入小说</button>
+    <input type="file" id="file-input" accept=".txt" style="display:none">
+  </div>
+</div>
+
+<!-- Reader Page -->
+<div id="reader-page" class="page">
+  <div id="reader-header" class="reader-header">
+    <span id="header-back" class="header-back">← 返回</span>
+    <span id="header-title" class="header-title"></span>
+    <span id="header-time" class="header-time"></span>
+  </div>
+  <div id="reader-container" class="reader-container">
+    <div id="reader-content" class="reader-content"></div>
+    <div id="reader-next" class="reader-content reader-next"></div>
+  </div>
+  <div id="reader-footer" class="reader-footer">
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+    <span id="progress-text" class="progress-text"></span>
+  </div>
+  <div id="reader-menu" class="reader-menu">
+    <div class="menu-row">
+      <button id="menu-toc" class="menu-btn">📑 目录</button>
+      <button id="menu-night" class="menu-btn">🌙 夜间</button>
+      <button id="menu-eye" class="menu-btn">🛡️ 护眼</button>
+      <button id="menu-settings" class="menu-btn">⚙️ 设置</button>
+    </div>
+    <div class="menu-progress">
+      <div class="progress-bar"><div id="menu-progress-fill" class="progress-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOC Page -->
+<div id="toc-page" class="page">
+  <div class="toc-header">
+    <span id="toc-back" class="header-back">← 返回</span>
+    <span class="toc-title">目录</span>
+    <span style="width:48px"></span>
+  </div>
+  <div id="toc-list" class="toc-list"></div>
+</div>
+
+<!-- Settings Panel (overlay on reader) -->
+<div id="settings-overlay" class="settings-overlay">
+  <div class="settings-backdrop"></div>
+  <div class="settings-panel">
+    <h3 class="settings-title">阅读设置</h3>
+    <div class="settings-item">
+      <span>🌙 夜间模式</span>
+      <label class="toggle"><input type="checkbox" id="setting-night"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-item">
+      <span>🛡️ 护眼模式</span>
+      <label class="toggle"><input type="checkbox" id="setting-eye"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-item">
+      <span>📖 翻页方式</span>
+      <select id="setting-pagemode" class="settings-select">
+        <option value="curl">仿真卷页</option>
+        <option value="scroll">上下翻页</option>
+      </select>
+    </div>
+    <div class="settings-item">
+      <span>🔤 字号</span>
+      <div class="font-size-control">
+        <button id="font-down" class="font-btn">A-</button>
+        <span id="font-label" class="font-label">标准</span>
+        <button id="font-up" class="font-btn">A+</button>
+      </div>
+    </div>
+    <button id="settings-close" class="btn-primary">完成</button>
+  </div>
+</div>
+
+<!-- Delete Confirm Dialog -->
+<div id="delete-dialog" class="dialog-overlay" style="display:none">
+  <div class="dialog-box">
+    <p class="dialog-text">确定要删除这本书吗？<br><small>此操作不可恢复</small></p>
+    <div class="dialog-buttons">
+      <button id="delete-cancel" class="btn-secondary">取消</button>
+      <button id="delete-confirm" class="btn-danger">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// === JS will be added in subsequent tasks ===
+</script>
+
+</body>
+</html>
