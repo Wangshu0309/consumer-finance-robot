@@ -1,4 +1,4 @@
-const CACHE_NAME = 'novel-reader-v1';
+const CACHE_NAME = 'novel-reader-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',

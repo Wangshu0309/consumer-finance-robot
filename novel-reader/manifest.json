@@ -1,7 +1,7 @@
 {
   "name": "小说阅读器",
   "short_name": "阅读器",
-  "description": "一个支持TXT导入、仿真翻页、多主题切换的小说阅读器",
+  "description": "一个支持TXT导入、上下翻页、多主题切换的小说阅读器",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
