@@ -221,16 +221,15 @@ html, body {
 .toast.show { opacity: 1; }
 
 /* === Header back button === */
-.header-back { font-size: 15px; color: var(--accent); cursor: pointer; padding: 4px 8px; }
-.header-time { font-size: 12px; color: var(--text-secondary); }
 
 /* === Reader === */
 .reader-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 6px;
   padding: 12px 16px; background: var(--bg-page);
   z-index: 10;
 }
-.header-title { font-size: 13px; color: var(--text-secondary); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-back { font-size: 14px; color: var(--text-secondary); cursor: pointer; padding: 4px 4px 4px 0; line-height: 1; }
+.header-title { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; }
 
 .reader-container {
   flex: 1; overflow: hidden; position: relative;
@@ -298,6 +297,12 @@ html, body {
 
 .reader-content p { margin-bottom: 0.8em; text-indent: 2em; }
 
+.chapter-divider {
+  text-align: center; font-size: 15px; font-weight: 700;
+  padding: 24px 0 16px; color: var(--accent);
+  letter-spacing: 2px;
+}
+
 /* === Reader Bottom Menu === */
 .reader-menu {
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -338,9 +343,8 @@ html, body {
 <!-- Reader Page -->
 <div id="reader-page" class="page">
   <div id="reader-header" class="reader-header">
-    <span id="header-back" class="header-back">← 返回</span>
+    <span id="header-back" class="header-back">←</span>
     <span id="header-title" class="header-title"></span>
-    <span id="header-time" class="header-time"></span>
   </div>
   <div id="reader-container" class="reader-container">
     <div id="reader-content" class="reader-content"></div>
@@ -366,7 +370,7 @@ html, body {
 <!-- TOC Page -->
 <div id="toc-page" class="page">
   <div class="toc-header">
-    <span id="toc-back" class="header-back">← 返回</span>
+    <span id="toc-back" class="header-back">←</span>
     <span class="toc-title">目录</span>
     <span style="width:48px"></span>
   </div>
@@ -735,8 +739,6 @@ const App = {
   init() {
     Bookshelf.init();
     this.bindNavigation();
-    this.updateClock();
-    setInterval(() => this.updateClock(), 30000);
   },
 
   bindNavigation() {
@@ -825,11 +827,6 @@ const App = {
     }
   },
 
-  updateClock() {
-    const now = new Date();
-    document.getElementById('header-time').textContent =
-      now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-  }
 };
 
 // ===== READER ENGINE =====
@@ -888,17 +885,16 @@ const Reader = {
 
     const text = Storage.getBookText(this.bookId);
     const chapters = ChapterParser.parse(text);
-    const chapter = chapters[chIdx];
-    if (!chapter) return;
-
-    const title = this.meta.chapterTitles[chIdx] || chapter.title;
-    document.getElementById('header-title').textContent = title;
-    this.meta.chapterTitles[chIdx] = title;
 
     const mode = Storage.getSettings().pageMode;
     if (mode === 'scroll') {
-      this._renderScroll(chapter);
+      this._renderScrollAll(chapters, chIdx);
     } else {
+      const chapter = chapters[chIdx];
+      if (!chapter) return;
+      const title = this.meta.chapterTitles[chIdx] || chapter.title;
+      document.getElementById('header-title').textContent = title;
+      this.meta.chapterTitles[chIdx] = title;
       this._paginate(chapter.body);
       this._renderCurlPage();
     }
@@ -907,7 +903,53 @@ const Reader = {
     this._saveProgress();
   },
 
-  _paginate(body) {
+  _renderScrollAll(chapters, startChapter) {
+    const contentEl = document.getElementById('reader-content');
+    contentEl.classList.add('scroll-mode');
+    document.getElementById('reader-next').style.display = 'none';
+
+    // Build continuous HTML with chapter separators
+    let html = '';
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      const title = this.meta.chapterTitles[i] || ch.title;
+      html += '<div class="chapter-divider" data-chapter="' + i + '">' + this._escHtml(title) + '</div>';
+      html += this._formatText(ch.body || '');
+    }
+    contentEl.innerHTML = html;
+
+    // Position to starting chapter
+    const dividers = contentEl.querySelectorAll('.chapter-divider');
+    if (dividers[startChapter]) {
+      contentEl.scrollTop = dividers[startChapter].offsetTop - 60;
+    }
+    this.currentPageStartPos = contentEl.scrollTop;
+
+    // Update header
+    const startTitle = this.meta.chapterTitles[startChapter] || chapters[startChapter].title;
+    document.getElementById('header-title').textContent = startTitle;
+
+    contentEl.onscroll = () => {
+      this.currentPageStartPos = contentEl.scrollTop;
+      this._saveProgress();
+
+      // Detect current chapter from scroll position
+      let visibleChapter = 0;
+      for (let i = dividers.length - 1; i >= 0; i--) {
+        if (dividers[i].offsetTop <= contentEl.scrollTop + 100) {
+          visibleChapter = i;
+          break;
+        }
+      }
+      if (visibleChapter !== this.chapterIndex) {
+        this.chapterIndex = visibleChapter;
+        const visTitle = this.meta.chapterTitles[visibleChapter] || chapters[visibleChapter].title;
+        document.getElementById('header-title').textContent = visTitle;
+      }
+
+      this.updateProgress();
+    };
+  },
     this.pageTexts = [];
     if (!body || body.trim().length === 0) {
       this.pageTexts = [''];
@@ -951,63 +993,6 @@ const Reader = {
     }
 
     this.updateProgress();
-  },
-
-  _renderScroll(chapter) {
-    const contentEl = document.getElementById('reader-content');
-    contentEl.classList.add('scroll-mode');
-    document.getElementById('reader-next').style.display = 'none';
-
-    const bodyText = chapter.body || '';
-    contentEl.innerHTML = this._formatText(bodyText);
-    contentEl.scrollTop = this.currentPageStartPos;
-
-    contentEl.onscroll = () => {
-      this.currentPageStartPos = contentEl.scrollTop;
-      this._saveProgress();
-      this.updateProgress();
-
-      // Near top: load previous chapter
-      const nearTop = contentEl.scrollTop <= 50;
-      if (nearTop && !this._autoLoading && this.chapterIndex > 0) {
-        this._autoLoading = true;
-        this.chapterIndex--;
-        const text = Storage.getBookText(this.bookId);
-        const chapters = ChapterParser.parse(text);
-        const chapter = chapters[this.chapterIndex];
-        if (chapter) {
-          const title = this.meta.chapterTitles[this.chapterIndex] || chapter.title;
-          document.getElementById('header-title').textContent = title;
-          contentEl.innerHTML = this._formatText(chapter.body || '');
-          // Scroll to bottom of previous chapter
-          contentEl.scrollTop = contentEl.scrollHeight;
-          this.currentPageStartPos = contentEl.scrollTop;
-          this.updateProgress();
-          this._saveProgress();
-        }
-        setTimeout(() => { this._autoLoading = false; }, 500);
-      }
-
-      // Near bottom: load next chapter
-      const nearBottom = contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 100;
-      if (nearBottom && !this._autoLoading && this.chapterIndex + 1 < this.meta.totalChapters) {
-        this._autoLoading = true;
-        this.chapterIndex++;
-        this.currentPageStartPos = 0;
-        const text = Storage.getBookText(this.bookId);
-        const chapters = ChapterParser.parse(text);
-        const chapter = chapters[this.chapterIndex];
-        if (chapter) {
-          const title = this.meta.chapterTitles[this.chapterIndex] || chapter.title;
-          document.getElementById('header-title').textContent = title;
-          contentEl.innerHTML = this._formatText(chapter.body || '');
-          contentEl.scrollTop = 0;
-          this.updateProgress();
-          this._saveProgress();
-        }
-        setTimeout(() => { this._autoLoading = false; }, 500);
-      }
-    };
   },
 
   _formatText(text) {
