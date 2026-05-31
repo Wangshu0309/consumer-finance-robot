@@ -125,6 +125,12 @@ html, body {
 }
 .btn-primary:active { opacity: 0.85; }
 
+.file-import-label { position: relative; overflow: hidden; }
+.file-import-input {
+  position: absolute; inset: 0; opacity: 0.01; cursor: pointer;
+  font-size: 100px;
+}
+
 /* === Table of Contents === */
 .toc-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -335,8 +341,10 @@ html, body {
     <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
   </div>
   <div class="shelf-footer">
-    <label for="file-input" class="btn-primary">导入小说</label>
-    <input type="file" id="file-input" accept=".txt,text/plain" style="position:absolute;width:0;height:0;opacity:0">
+    <label class="btn-primary file-import-label">
+      导入小说
+      <input type="file" id="file-input" accept=".txt,text/plain" class="file-import-input" onchange="Bookshelf.onFileSelected(event)">
+    </label>
   </div>
 </div>
 
@@ -570,6 +578,11 @@ const Bookshelf = {
     });
     document.addEventListener('click', (e) => this._hideLongPress(e));
     this.render();
+  },
+
+  onFileSelected(e) {
+    if (e.target.files[0]) this.importFile(e.target.files[0]);
+    e.target.value = '';
   },
 
   async importFile(file) {
