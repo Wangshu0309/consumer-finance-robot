@@ -727,6 +727,95 @@ const Bookshelf = {
     return div.innerHTML;
   }
 };
+
+// ===== APP SHELL =====
+const App = {
+  currentBookId: null,
+
+  init() {
+    Bookshelf.init();
+    this.bindNavigation();
+    this.updateClock();
+    setInterval(() => this.updateClock(), 30000);
+  },
+
+  bindNavigation() {
+    document.getElementById('header-back').addEventListener('click', () => this.showBookshelf());
+    document.getElementById('menu-toc').addEventListener('click', () => this.showTOC());
+    document.getElementById('toc-back').addEventListener('click', () => this.showReader());
+    const readerContainer = document.getElementById('reader-container');
+    readerContainer.addEventListener('click', (e) => this._handleReaderTap(e));
+    document.getElementById('menu-settings').addEventListener('click', () => Settings.show());
+    document.getElementById('settings-close').addEventListener('click', () => Settings.hide());
+    document.querySelector('.settings-backdrop').addEventListener('click', () => Settings.hide());
+    document.getElementById('menu-night').addEventListener('click', () => Settings.toggleNight());
+    document.getElementById('menu-eye').addEventListener('click', () => Settings.toggleEyeCare());
+  },
+
+  showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id + '-page').classList.add('active');
+  },
+
+  showBookshelf() {
+    this.currentBookId = null;
+    this.showPage('bookshelf');
+    Bookshelf.render();
+  },
+
+  openBook(bookId) {
+    this.currentBookId = bookId;
+    this.showPage('reader');
+    Reader.init(bookId);
+  },
+
+  showReader() {
+    this.showPage('reader');
+  },
+
+  showTOC() {
+    const meta = Storage.getBookMeta(this.currentBookId);
+    if (!meta) return;
+    this.showPage('toc');
+    const list = document.getElementById('toc-list');
+    const progress = Storage.getProgress(this.currentBookId);
+    list.innerHTML = meta.chapterTitles.map((t, i) => {
+      let cls = 'toc-item';
+      let badge = '';
+      if (i === progress.chapterIndex) { cls += ' current'; badge = '<span class="toc-badge">当前</span>'; }
+      else if (i < progress.chapterIndex) { cls += ' read'; badge = '<span class="toc-badge read">已读</span>'; }
+      return `<div class="${cls}" data-chapter="${i}"><span class="toc-item-title">${Bookshelf._esc(t)}</span>${badge}</div>`;
+    }).join('');
+
+    list.querySelectorAll('.toc-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const chIdx = parseInt(item.dataset.chapter);
+        Reader.loadChapter(chIdx);
+        this.showReader();
+      });
+    });
+  },
+
+  _handleReaderTap(e) {
+    const mode = Storage.getSettings().pageMode;
+    if (mode === 'scroll') {
+      Reader.toggleMenu();
+      return;
+    }
+    const x = e.clientX;
+    const w = window.innerWidth;
+    if (x < w * 0.2) Reader.prevPage();
+    else if (x > w * 0.8) Reader.nextPage();
+    else Reader.toggleMenu();
+  },
+
+  updateClock() {
+    const now = new Date();
+    document.getElementById('header-time').textContent =
+      now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+  }
+};
+
 </script>
 
 </body>
