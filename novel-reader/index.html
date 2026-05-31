@@ -1198,6 +1198,31 @@ const Settings = {
   }
 };
 
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply saved settings on load
+  const settings = Storage.getSettings();
+  document.body.classList.toggle('night', settings.theme === 'night');
+  document.body.classList.toggle('eye-care', settings.eyeCare);
+
+  Settings.init();
+  App.init();
+
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            Toast.show('有新版本可用，请刷新页面');
+          }
+        });
+      });
+    }).catch(() => {});
+  }
+});
+
 </script>
 
 </body>
