@@ -121,7 +121,7 @@ html, body {
   display: block; width: 100%; padding: 12px;
   background: var(--accent); color: #fff; border: none;
   border-radius: 8px; font-size: 16px; font-weight: 600;
-  cursor: pointer; letter-spacing: 1px;
+  cursor: pointer; letter-spacing: 1px; text-align: center;
 }
 .btn-primary:active { opacity: 0.85; }
 
@@ -335,8 +335,8 @@ html, body {
     <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
   </div>
   <div class="shelf-footer">
-    <button id="import-btn" class="btn-primary">导入小说</button>
-    <input type="file" id="file-input" accept=".txt,text/plain" style="display:none">
+    <label for="file-input" class="btn-primary">导入小说</label>
+    <input type="file" id="file-input" accept=".txt,text/plain" style="position:absolute;width:0;height:0;opacity:0">
   </div>
 </div>
 
@@ -564,9 +564,6 @@ const ChapterParser = {
 // ===== BOOKSHELF MANAGER =====
 const Bookshelf = {
   init() {
-    document.getElementById('import-btn').addEventListener('click', () => {
-      document.getElementById('file-input').click();
-    });
     document.getElementById('file-input').addEventListener('change', (e) => {
       if (e.target.files[0]) this.importFile(e.target.files[0]);
       e.target.value = '';
