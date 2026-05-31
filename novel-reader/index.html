@@ -421,7 +421,72 @@ html, body {
 <div id="toast" class="toast"></div>
 
 <script>
-// === JS will be added in subsequent tasks ===
+// ===== STORAGE MANAGER =====
+const Storage = {
+  get(key) {
+    try { return JSON.parse(localStorage.getItem(key)); }
+    catch { return null; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        Toast.show('存储空间不足，请清理旧书后重试');
+      }
+      return false;
+    }
+  },
+  remove(key) { localStorage.removeItem(key); },
+
+  // Books list
+  getBooks() { return this.get('novel_books') || []; },
+  saveBooks(books) { return this.set('novel_books', books); },
+
+  // Single book meta
+  getBookMeta(id) { return this.get('novel_' + id + '_meta'); },
+  saveBookMeta(id, meta) { return this.set('novel_' + id + '_meta', meta); },
+
+  // Full text
+  getBookText(id) { return localStorage.getItem('novel_' + id + '_text') || ''; },
+  saveBookText(id, text) {
+    try { localStorage.setItem('novel_' + id + '_text', text); return true; }
+    catch (e) { return false; }
+  },
+  removeBookText(id) { localStorage.removeItem('novel_' + id + '_text'); },
+
+  // Reading progress
+  getProgress(id) { return this.get('novel_' + id + '_progress') || { chapterIndex: 0, scrollPos: 0, timestamp: 0 }; },
+  saveProgress(id, p) { return this.set('novel_' + id + '_progress', { ...p, timestamp: Date.now() }); },
+
+  // Settings
+  getSettings() { return this.get('novel_settings') || { theme: 'day', eyeCare: false, pageMode: 'curl', fontSize: 'md' }; },
+  saveSettings(s) { return this.set('novel_settings', s); },
+
+  // Remove entire book
+  removeBook(id) {
+    this.removeBookText(id);
+    this.remove('novel_' + id + '_meta');
+    this.remove('novel_' + id + '_progress');
+  },
+
+  getStorageUsage() {
+    let total = 0;
+    for (let k in localStorage) { if (localStorage.hasOwnProperty(k) && k.startsWith('novel_')) { total += localStorage.getItem(k).length; } }
+    return total;
+  }
+};
+
+// ===== TOAST =====
+const Toast = {
+  timer: null,
+  show(msg, duration = 2000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => el.classList.remove('show'), duration);
+  }
+};
 </script>
 
 </body>
