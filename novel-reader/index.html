@@ -336,7 +336,8 @@ html, body {
     <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
   </div>
   <div class="shelf-footer">
-    <button id="import-btn" class="btn-primary">导入小说</button>
+    <button id="import-btn" class="btn-primary" onclick="pickTxtFile()">导入小说</button>
+    <input type="file" id="file-input" accept=".txt,text/plain" style="display:none">
   </div>
 </div>
 
@@ -564,36 +565,16 @@ const ChapterParser = {
 // ===== BOOKSHELF MANAGER =====
 const Bookshelf = {
   init() {
-    document.getElementById('import-btn').addEventListener('click', () => this.pickFile());
+    // Global function for inline onclick handler
+    window.pickTxtFile = () => {
+      document.getElementById('file-input').click();
+    };
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      if (this.files[0]) Bookshelf.importFile(this.files[0]);
+      this.value = '';
+    });
     document.addEventListener('click', (e) => this._hideLongPress(e));
     this.render();
-  },
-
-  pickFile() {
-    // Create file input dynamically each time for WebView compatibility
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt,text/plain';
-    input.style.display = 'none';
-    input.onchange = (e) => {
-      if (e.target.files && e.target.files[0]) {
-        this.importFile(e.target.files[0]);
-      }
-      input.remove();
-    };
-    // Handle cancel (no file selected)
-    input.oncancel = () => { input.remove(); };
-    // Also handle via window focus (user returns without selecting)
-    const onFocus = () => {
-      window.removeEventListener('focus', onFocus);
-      setTimeout(() => {
-        if (document.body.contains(input)) input.remove();
-      }, 500);
-    };
-    window.addEventListener('focus', onFocus);
-
-    document.body.appendChild(input);
-    input.click();
   },
 
   async importFile(file) {
