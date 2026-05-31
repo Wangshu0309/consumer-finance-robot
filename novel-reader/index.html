@@ -816,6 +816,289 @@ const App = {
   }
 };
 
+// ===== READER ENGINE =====
+const Reader = {
+  bookId: null,
+  chapterIndex: 0,
+  meta: null,
+  currentPageContent: '',
+  nextPageContent: '',
+  currentPageStartPos: 0,
+  isFlipping: false,
+  menuVisible: false,
+  pageTexts: [],
+  currentPage: 0,
+  _autoLoading: false,
+
+  init(bookId) {
+    this.bookId = bookId;
+    this.meta = Storage.getBookMeta(bookId);
+    const progress = Storage.getProgress(bookId);
+    this.chapterIndex = progress.chapterIndex;
+    this.currentPageStartPos = progress.scrollPos || 0;
+
+    const settings = Storage.getSettings();
+    this.applySettings(settings);
+
+    const title = this.meta.chapterTitles[this.chapterIndex] || this.meta.title;
+    document.getElementById('header-title').textContent = title;
+
+    this.loadChapter(this.chapterIndex, this.currentPageStartPos);
+  },
+
+  applySettings(settings) {
+    document.body.classList.toggle('night', settings.theme === 'night');
+    document.body.classList.toggle('eye-care', settings.eyeCare);
+    document.getElementById('setting-night').checked = settings.theme === 'night';
+    document.getElementById('setting-eye').checked = settings.eyeCare;
+    document.getElementById('setting-pagemode').value = settings.pageMode;
+
+    const content = document.getElementById('reader-content');
+    content.className = 'reader-content font-' + (settings.fontSize || 'md');
+
+    if (settings.pageMode === 'scroll') {
+      content.classList.add('scroll-mode');
+      document.getElementById('reader-next').style.display = 'none';
+    } else {
+      document.getElementById('reader-next').style.display = '';
+    }
+  },
+
+  loadChapter(chIdx, startPos = 0) {
+    this.chapterIndex = chIdx;
+    this.currentPageStartPos = startPos;
+    this.currentPage = 0;
+
+    const text = Storage.getBookText(this.bookId);
+    const chapters = ChapterParser.parse(text);
+    const chapter = chapters[chIdx];
+    if (!chapter) return;
+
+    const title = this.meta.chapterTitles[chIdx] || chapter.title;
+    document.getElementById('header-title').textContent = title;
+    this.meta.chapterTitles[chIdx] = title;
+
+    const mode = Storage.getSettings().pageMode;
+    if (mode === 'scroll') {
+      this._renderScroll(chapter);
+    } else {
+      this._paginate(chapter.body);
+      this._renderCurlPage();
+    }
+
+    this.updateProgress();
+    this._saveProgress();
+  },
+
+  _paginate(body) {
+    this.pageTexts = [];
+    if (!body || body.trim().length === 0) {
+      this.pageTexts = [''];
+      return;
+    }
+
+    const settings = Storage.getSettings();
+    const fontSizeMap = { sm: 14, md: 16, lg: 18, xl: 20, xxl: 22 };
+    const fontSize = fontSizeMap[settings.fontSize] || 16;
+    const charsPerLine = Math.floor((window.innerWidth - 40) / (fontSize * 0.6));
+    const linesPerPage = Math.floor((window.innerHeight - 180) / (fontSize * 1.9));
+    const charsPerPage = charsPerLine * linesPerPage;
+
+    const paragraphs = body.split(/\n+/).filter(p => p.trim());
+    let currentChunk = '';
+    for (const para of paragraphs) {
+      const candidate = currentChunk + (currentChunk ? '\n\n' : '') + para;
+      if (candidate.length > charsPerPage && currentChunk.length > 0) {
+        this.pageTexts.push(currentChunk);
+        currentChunk = para;
+      } else {
+        currentChunk = candidate;
+      }
+    }
+    if (currentChunk) this.pageTexts.push(currentChunk);
+    if (this.pageTexts.length === 0) this.pageTexts = [''];
+  },
+
+  _renderCurlPage() {
+    const contentEl = document.getElementById('reader-content');
+    contentEl.classList.remove('scroll-mode');
+    document.getElementById('reader-next').style.display = '';
+
+    const text = this.pageTexts[this.currentPage] || '';
+    contentEl.innerHTML = this._formatText(text);
+    contentEl.scrollTop = 0;
+
+    if (this.currentPage + 1 < this.pageTexts.length) {
+      const nextEl = document.getElementById('reader-next');
+      nextEl.innerHTML = this._formatText(this.pageTexts[this.currentPage + 1]);
+    }
+
+    this.updateProgress();
+  },
+
+  _renderScroll(chapter) {
+    const contentEl = document.getElementById('reader-content');
+    contentEl.classList.add('scroll-mode');
+    document.getElementById('reader-next').style.display = 'none';
+
+    const bodyText = chapter.body || '';
+    contentEl.innerHTML = this._formatText(bodyText);
+    contentEl.scrollTop = this.currentPageStartPos;
+
+    contentEl.onscroll = () => {
+      this.currentPageStartPos = contentEl.scrollTop;
+      this._saveProgress();
+      this.updateProgress();
+
+      const nearBottom = contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 100;
+      if (nearBottom && !this._autoLoading && this.chapterIndex + 1 < this.meta.totalChapters) {
+        this._autoLoading = true;
+        this.chapterIndex++;
+        this.currentPageStartPos = 0;
+        const text = Storage.getBookText(this.bookId);
+        const chapters = ChapterParser.parse(text);
+        const chapter = chapters[this.chapterIndex];
+        if (chapter) {
+          const title = this.meta.chapterTitles[this.chapterIndex] || chapter.title;
+          document.getElementById('header-title').textContent = title;
+          contentEl.innerHTML = this._formatText(chapter.body || '');
+          contentEl.scrollTop = 0;
+          this.updateProgress();
+          this._saveProgress();
+        }
+        setTimeout(() => { this._autoLoading = false; }, 500);
+      }
+    };
+  },
+
+  _formatText(text) {
+    if (!text) return '<p style="color:var(--text-secondary)">（本章内容为空）</p>';
+    const paragraphs = text.split(/\n+/).filter(p => p.trim());
+    return paragraphs.map(p => `<p>${this._escHtml(p.trim())}</p>`).join('');
+  },
+
+  _escHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  },
+
+  nextPage() {
+    const mode = Storage.getSettings().pageMode;
+    if (mode === 'scroll') return;
+
+    if (this.currentPage + 1 < this.pageTexts.length) {
+      this._animateFlip('next');
+    } else if (this.chapterIndex + 1 < this.meta.totalChapters) {
+      this.loadChapter(this.chapterIndex + 1, 0);
+    } else {
+      Toast.show('已经是最后一页了');
+    }
+  },
+
+  prevPage() {
+    const mode = Storage.getSettings().pageMode;
+    if (mode === 'scroll') return;
+
+    if (this.currentPage > 0) {
+      this._animateFlip('prev');
+    } else if (this.chapterIndex > 0) {
+      this.loadChapter(this.chapterIndex - 1, 0);
+      this.currentPage = this.pageTexts.length - 1;
+      this._renderCurlPage();
+    } else {
+      Toast.show('已经是第一页了');
+    }
+  },
+
+  _animateFlip(direction) {
+    if (this.isFlipping) return;
+    this.isFlipping = true;
+
+    const container = document.getElementById('reader-container');
+    const content = document.getElementById('reader-content');
+    const next = document.getElementById('reader-next');
+
+    if (direction === 'next') {
+      this.currentPage++;
+      const nextText = this.pageTexts[this.currentPage] || '';
+      next.innerHTML = this._formatText(nextText);
+      next.scrollTop = 0;
+
+      const flipWrap = document.createElement('div');
+      flipWrap.className = 'page-curl-container';
+      flipWrap.style.cssText = 'position:absolute;inset:0;z-index:5;';
+      content.parentNode.insertBefore(flipWrap, content);
+      flipWrap.appendChild(content);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          flipWrap.classList.add('flipped');
+        });
+      });
+
+      setTimeout(() => {
+        flipWrap.parentNode.insertBefore(content, flipWrap);
+        flipWrap.remove();
+        content.innerHTML = this._formatText(this.pageTexts[this.currentPage]);
+        content.scrollTop = 0;
+        next.innerHTML = this._formatText(this.pageTexts[this.currentPage + 1] || '');
+        this.updateProgress();
+        this._saveProgress();
+        this.isFlipping = false;
+      }, 500);
+    } else {
+      this.currentPage--;
+      content.innerHTML = this._formatText(this.pageTexts[this.currentPage]);
+      content.scrollTop = 0;
+      next.innerHTML = this._formatText(this.pageTexts[this.currentPage + 1] || '');
+      this.updateProgress();
+      this._saveProgress();
+      this.isFlipping = false;
+    }
+  },
+
+  toggleMenu() {
+    const menu = document.getElementById('reader-menu');
+    const header = document.getElementById('reader-header');
+    const footer = document.getElementById('reader-footer');
+    this.menuVisible = !this.menuVisible;
+    menu.classList.toggle('show', this.menuVisible);
+    header.classList.toggle('visible', this.menuVisible);
+    footer.classList.toggle('visible', this.menuVisible);
+  },
+
+  updateProgress() {
+    const mode = Storage.getSettings().pageMode;
+    let chapterProg = 0;
+    if (mode === 'scroll') {
+      const el = document.getElementById('reader-content');
+      if (el.scrollHeight > el.clientHeight) {
+        chapterProg = Math.round((el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100);
+      }
+    } else {
+      chapterProg = this.pageTexts.length > 1
+        ? Math.round((this.currentPage / (this.pageTexts.length - 1)) * 100) : 0;
+    }
+    const totalCh = this.meta.totalChapters || 1;
+    const bookProg = Math.round(((this.chapterIndex + chapterProg / 100) / totalCh) * 100);
+
+    document.getElementById('progress-fill').style.width = chapterProg + '%';
+    document.getElementById('menu-progress-fill').style.width = chapterProg + '%';
+    document.getElementById('progress-text').textContent =
+      (this.meta.chapterTitles[this.chapterIndex] || '') + ' · ' + bookProg + '%';
+  },
+
+  _saveProgress() {
+    if (!this.bookId) return;
+    Storage.saveProgress(this.bookId, {
+      chapterIndex: this.chapterIndex,
+      scrollPos: this.currentPageStartPos,
+      timestamp: Date.now(),
+    });
+  }
+};
+
 </script>
 
 </body>
