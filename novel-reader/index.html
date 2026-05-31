@@ -125,11 +125,6 @@ html, body {
 }
 .btn-primary:active { opacity: 0.85; }
 
-.file-import-label { position: relative; overflow: hidden; }
-.file-import-input {
-  position: absolute; inset: 0; opacity: 0.01; cursor: pointer;
-  font-size: 100px;
-}
 
 /* === Table of Contents === */
 .toc-header {
@@ -341,10 +336,7 @@ html, body {
     <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
   </div>
   <div class="shelf-footer">
-    <label class="btn-primary file-import-label">
-      导入小说
-      <input type="file" id="file-input" accept=".txt,text/plain" class="file-import-input" onchange="Bookshelf.onFileSelected(event)">
-    </label>
+    <button id="import-btn" class="btn-primary">导入小说</button>
   </div>
 </div>
 
@@ -572,17 +564,36 @@ const ChapterParser = {
 // ===== BOOKSHELF MANAGER =====
 const Bookshelf = {
   init() {
-    document.getElementById('file-input').addEventListener('change', (e) => {
-      if (e.target.files[0]) this.importFile(e.target.files[0]);
-      e.target.value = '';
-    });
+    document.getElementById('import-btn').addEventListener('click', () => this.pickFile());
     document.addEventListener('click', (e) => this._hideLongPress(e));
     this.render();
   },
 
-  onFileSelected(e) {
-    if (e.target.files[0]) this.importFile(e.target.files[0]);
-    e.target.value = '';
+  pickFile() {
+    // Create file input dynamically each time for WebView compatibility
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,text/plain';
+    input.style.display = 'none';
+    input.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        this.importFile(e.target.files[0]);
+      }
+      input.remove();
+    };
+    // Handle cancel (no file selected)
+    input.oncancel = () => { input.remove(); };
+    // Also handle via window focus (user returns without selecting)
+    const onFocus = () => {
+      window.removeEventListener('focus', onFocus);
+      setTimeout(() => {
+        if (document.body.contains(input)) input.remove();
+      }, 500);
+    };
+    window.addEventListener('focus', onFocus);
+
+    document.body.appendChild(input);
+    input.click();
   },
 
   async importFile(file) {
@@ -670,7 +681,9 @@ const Bookshelf = {
     Storage.saveProgress(bookId, { chapterIndex: 0, scrollPos: 0, timestamp: Date.now() });
 
     this.render();
-    Toast.show('导入成功！共识别 ' + chapters.length + ' 章');
+    const msg = '导入成功！共识别 ' + chapters.length + ' 章';
+    Toast.show(msg);
+    try { alert(msg); } catch {}
   },
 
   _looksGarbled(text) {
