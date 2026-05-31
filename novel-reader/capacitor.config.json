@@ -1,0 +1,6 @@
+{
+  "webDir": "www",
+  "appId": "com.novelreader.app",
+  "appName": "小说阅读器",
+  "bundledWebRuntime": false
+}
