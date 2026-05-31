@@ -679,6 +679,66 @@ const Settings = {
   _update(k, v) { const s = S.settings(); s[k] = v; S.saveSettings(s); },
   _apply() { if (Reader.bookId) Reader.applySettings(S.settings()); }
 };
+
+// ===== APP =====
+const App = {
+  currentBookId: null,
+
+  init() {
+    Shelf.init();
+    Settings.init();
+
+    document.getElementById('reader-back').addEventListener('click', () => this.showBookshelf());
+    document.getElementById('reader-content').addEventListener('click', e => {
+      const w = window.innerWidth;
+      if (e.clientX > w * 0.15 && e.clientX < w * 0.85) Reader.toggleMenu();
+    });
+    document.getElementById('menu-toc').addEventListener('click', () => { Reader.hideMenu(); TOC.show(); });
+    document.getElementById('menu-theme').addEventListener('click', () => { Settings.toggleTheme(); Reader.updateProgress(); });
+    document.getElementById('menu-eye').addEventListener('click', () => { Settings.toggleEye(); Reader.updateProgress(); });
+    document.getElementById('menu-settings').addEventListener('click', () => { Reader.hideMenu(); Settings.show(); });
+    document.getElementById('toc-back').addEventListener('click', () => this.showReader());
+
+    document.addEventListener('keydown', e => {
+      if (!this.currentBookId) return;
+      if (e.key === 'AudioVolumeUp' || e.keyCode === 24) { e.preventDefault(); Reader.scrollOneScreen(-1); }
+      if (e.key === 'AudioVolumeDown' || e.keyCode === 25) { e.preventDefault(); Reader.scrollOneScreen(1); }
+    });
+  },
+
+  showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(name + '-page').classList.add('active');
+  },
+
+  showBookshelf() {
+    this.currentBookId = null;
+    this.showPage('shelf');
+    Shelf.render();
+  },
+
+  showReader() {
+    this.showPage('reader');
+  },
+
+  openBook(id) {
+    this.currentBookId = id;
+    this.showPage('reader');
+    Reader.init(id);
+  }
+};
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  const s = S.settings();
+  document.body.classList.toggle('night', s.theme === 'night');
+  document.body.classList.toggle('eye-care', s.eyeCare);
+  App.init();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+});
 </script>
 
 </body>
