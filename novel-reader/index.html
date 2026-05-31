@@ -1099,6 +1099,105 @@ const Reader = {
   }
 };
 
+// ===== SETTINGS MANAGER =====
+const Settings = {
+  _fontLabels: ['小', '较小', '标准', '较大', '大'],
+  _fontValues: ['sm', 'sm', 'md', 'lg', 'xl', 'xxl'],
+
+  init() {
+    const s = Storage.getSettings();
+    this._applyToUI(s);
+
+    document.getElementById('setting-night').addEventListener('change', (e) => {
+      this._update('theme', e.target.checked ? 'night' : 'day');
+      this._apply();
+    });
+    document.getElementById('setting-eye').addEventListener('change', (e) => {
+      this._update('eyeCare', e.target.checked);
+      this._apply();
+    });
+    document.getElementById('setting-pagemode').addEventListener('change', (e) => {
+      this._update('pageMode', e.target.value);
+      this._apply();
+      if (App.currentBookId) {
+        Reader.loadChapter(Reader.chapterIndex, 0);
+      }
+    });
+
+    document.getElementById('font-down').addEventListener('click', () => {
+      const s = Storage.getSettings();
+      const currentVal = s.fontSize || 'md';
+      const currentIdx = ['sm', 'md', 'lg', 'xl', 'xxl'].indexOf(currentVal);
+      const newIdx = Math.max(0, currentIdx - 1);
+      const newVal = ['sm', 'md', 'lg', 'xl', 'xxl'][newIdx];
+      this._update('fontSize', newVal);
+      document.getElementById('font-label').textContent = this._fontLabels[newIdx];
+      this._apply();
+      if (App.currentBookId) Reader.loadChapter(Reader.chapterIndex, Reader.currentPageStartPos);
+    });
+    document.getElementById('font-up').addEventListener('click', () => {
+      const s = Storage.getSettings();
+      const currentVal = s.fontSize || 'md';
+      const currentIdx = ['sm', 'md', 'lg', 'xl', 'xxl'].indexOf(currentVal);
+      const newIdx = Math.min(4, currentIdx + 1);
+      const newVal = ['sm', 'md', 'lg', 'xl', 'xxl'][newIdx];
+      this._update('fontSize', newVal);
+      document.getElementById('font-label').textContent = this._fontLabels[newIdx];
+      this._apply();
+      if (App.currentBookId) Reader.loadChapter(Reader.chapterIndex, Reader.currentPageStartPos);
+    });
+
+    const curVal = s.fontSize || 'md';
+    const curIdx = ['sm', 'md', 'lg', 'xl', 'xxl'].indexOf(curVal);
+    document.getElementById('font-label').textContent = this._fontLabels[curIdx];
+  },
+
+  show() {
+    const s = Storage.getSettings();
+    this._applyToUI(s);
+    document.getElementById('settings-overlay').classList.add('show');
+  },
+
+  hide() {
+    document.getElementById('settings-overlay').classList.remove('show');
+  },
+
+  toggleNight() {
+    const s = Storage.getSettings();
+    s.theme = s.theme === 'night' ? 'day' : 'night';
+    Storage.saveSettings(s);
+    this._apply();
+  },
+
+  toggleEyeCare() {
+    const s = Storage.getSettings();
+    s.eyeCare = !s.eyeCare;
+    Storage.saveSettings(s);
+    this._apply();
+  },
+
+  _applyToUI(s) {
+    document.getElementById('setting-night').checked = s.theme === 'night';
+    document.getElementById('setting-eye').checked = s.eyeCare;
+    document.getElementById('setting-pagemode').value = s.pageMode || 'curl';
+  },
+
+  _update(key, value) {
+    const s = Storage.getSettings();
+    s[key] = value;
+    Storage.saveSettings(s);
+  },
+
+  _apply() {
+    const s = Storage.getSettings();
+    document.body.classList.toggle('night', s.theme === 'night');
+    document.body.classList.toggle('eye-care', s.eyeCare);
+    if (App.currentBookId) {
+      Reader.applySettings(s);
+    }
+  }
+};
+
 </script>
 
 </body>
