@@ -228,9 +228,8 @@ html, body {
 .reader-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 48px 16px 8px; background: var(--bg-page);
-  opacity: 0; transition: opacity 0.3s; z-index: 10;
+  z-index: 10;
 }
-.reader-header.visible { opacity: 1; }
 .header-title { font-size: 13px; color: var(--text-secondary); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .reader-container {
@@ -751,6 +750,8 @@ const App = {
     document.querySelector('.settings-backdrop').addEventListener('click', () => Settings.hide());
     document.getElementById('menu-night').addEventListener('click', () => Settings.toggleNight());
     document.getElementById('menu-eye').addEventListener('click', () => Settings.toggleEyeCare());
+    // Volume key page turning
+    document.addEventListener('keydown', (e) => this._handleKeyDown(e));
   },
 
   showPage(id) {
@@ -808,6 +809,20 @@ const App = {
     if (x < w * 0.2) Reader.prevPage();
     else if (x > w * 0.8) Reader.nextPage();
     else Reader.toggleMenu();
+  },
+
+  _handleKeyDown(e) {
+    // Only handle volume keys when reading a book
+    if (!this.currentBookId) return;
+    // Android WebView: keyCode 24 = VOLUME_UP, 25 = VOLUME_DOWN
+    // Standard: event.key "AudioVolumeUp" / "AudioVolumeDown"
+    if (e.key === 'AudioVolumeUp' || e.keyCode === 24) {
+      e.preventDefault();
+      Reader.prevPage();
+    } else if (e.key === 'AudioVolumeDown' || e.keyCode === 25) {
+      e.preventDefault();
+      Reader.nextPage();
+    }
   },
 
   updateClock() {
@@ -952,6 +967,28 @@ const Reader = {
       this._saveProgress();
       this.updateProgress();
 
+      // Near top: load previous chapter
+      const nearTop = contentEl.scrollTop <= 50;
+      if (nearTop && !this._autoLoading && this.chapterIndex > 0) {
+        this._autoLoading = true;
+        this.chapterIndex--;
+        const text = Storage.getBookText(this.bookId);
+        const chapters = ChapterParser.parse(text);
+        const chapter = chapters[this.chapterIndex];
+        if (chapter) {
+          const title = this.meta.chapterTitles[this.chapterIndex] || chapter.title;
+          document.getElementById('header-title').textContent = title;
+          contentEl.innerHTML = this._formatText(chapter.body || '');
+          // Scroll to bottom of previous chapter
+          contentEl.scrollTop = contentEl.scrollHeight;
+          this.currentPageStartPos = contentEl.scrollTop;
+          this.updateProgress();
+          this._saveProgress();
+        }
+        setTimeout(() => { this._autoLoading = false; }, 500);
+      }
+
+      // Near bottom: load next chapter
       const nearBottom = contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 100;
       if (nearBottom && !this._autoLoading && this.chapterIndex + 1 < this.meta.totalChapters) {
         this._autoLoading = true;
@@ -1062,11 +1099,9 @@ const Reader = {
 
   toggleMenu() {
     const menu = document.getElementById('reader-menu');
-    const header = document.getElementById('reader-header');
     const footer = document.getElementById('reader-footer');
     this.menuVisible = !this.menuVisible;
     menu.classList.toggle('show', this.menuVisible);
-    header.classList.toggle('visible', this.menuVisible);
     footer.classList.toggle('visible', this.menuVisible);
   },
 
