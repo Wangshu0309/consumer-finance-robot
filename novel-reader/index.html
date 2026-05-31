@@ -5,20 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#2C2C2C">
+<meta name="theme-color" content="#F5F0E8">
 <link rel="manifest" href="./manifest.json">
 <title>小说阅读器</title>
 <style>
-/* === CSS Reset & Variables === */
+/* === Reset === */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* === Theme Variables === */
 :root {
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
-  --font-size-sm: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-xxl: 22px;
+  --font-size: 18px;
+  --line-height: 1.9;
   --bg-page: #F5F0E8;
   --bg-surface: #EDE8E0;
   --bg-card: #FFFFFF;
@@ -29,8 +27,6 @@
   --accent: #C9A96E;
   --accent-light: rgba(201, 169, 110, 0.15);
   --overlay: rgba(0,0,0,0.5);
-  --eye-care-overlay: transparent;
-  --transition: 0.3s ease;
 }
 
 body.night {
@@ -66,1178 +62,117 @@ html, body {
   -webkit-user-select: none;
 }
 
-.page { display: none; position: fixed; inset: 0; overflow: hidden; }
-.page.active { display: flex; flex-direction: column; }
+/* === Page Switching === */
+.page { display: none; position: fixed; inset: 0; overflow: hidden; flex-direction: column; }
+.page.active { display: flex; }
 
 /* === Bookshelf === */
-.shelf-header {
-  padding: 12px 20px;
-  background: var(--bg-surface);
-  text-align: center;
-}
-.shelf-title { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+.shelf-header { text-align: center; padding: 14px 20px; }
+.shelf-header h1 { font-size: 18px; font-weight: 700; letter-spacing: 2px; }
 
-.book-list {
-  flex: 1; overflow-y: auto; padding: 16px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-  align-content: start;
-}
+.book-grid { flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
 
-.book-card {
-  background: var(--bg-card); border-radius: 10px;
-  padding: 16px 12px; text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: transform var(--transition);
-  position: relative;
-}
+.book-card { background: var(--bg-card); border-radius: 10px; padding: 16px 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: relative; }
 .book-card:active { transform: scale(0.97); }
-.book-cover {
-  width: 60px; height: 80px; margin: 0 auto 10px;
-  background: linear-gradient(135deg, var(--accent), #8B6914);
-  border-radius: 4px; display: flex; align-items: center;
-  justify-content: center; font-size: 24px; color: #fff;
-}
-.book-name { font-size: 14px; font-weight: 600; margin-bottom: 4px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.book-progress { font-size: 11px; color: var(--text-secondary); }
-.book-delete {
-  position: absolute; top: 4px; right: 8px;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: rgba(255,0,0,0.1); color: #E05555;
-  border: none; font-size: 14px; line-height: 24px;
-  cursor: pointer; display: none;
-}
+.book-cover { width: 56px; height: 76px; margin: 0 auto 8px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.book-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+.book-meta { font-size: 11px; color: var(--text-secondary); }
+.book-delete { position: absolute; top: 4px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,0,0,0.1); color: #E05555; border: none; font-size: 14px; line-height: 24px; display: none; }
 .book-card.long-press .book-delete { display: block; }
 
-.empty-state { display: none; flex-direction: column; align-items: center;
-  justify-content: center; flex: 1; padding: 40px; text-align: center; }
+.empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px; text-align: center; }
 .empty-state.show { display: flex; }
 .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.6; }
 .empty-text { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
 .empty-hint { font-size: 13px; color: var(--text-secondary); }
 
-.shelf-footer { padding: 12px 20px 24px; background: var(--bg-surface); }
-.btn-primary {
-  display: block; width: 100%; padding: 12px;
-  background: var(--accent); color: #fff; border: none;
-  border-radius: 8px; font-size: 16px; font-weight: 600;
-  cursor: pointer; letter-spacing: 1px; text-align: center;
-}
-.btn-primary:active { opacity: 0.85; }
+.shelf-footer { padding: 12px 20px 24px; }
+.btn-import { display: block; width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; letter-spacing: 1px; text-align: center; }
+.btn-import:active { opacity: 0.85; }
 
+/* === Reader === */
+.reader-header { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; color: var(--text-secondary); z-index: 10; }
+.reader-header .header-back { font-size: 14px; cursor: pointer; padding: 4px 4px 4px 0; line-height: 1; }
+.reader-header .header-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; }
 
-/* === Table of Contents === */
-.toc-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: var(--bg-surface);
-}
-.toc-title { font-size: 18px; font-weight: 700; }
+.reader-content { flex: 1; overflow-y: auto; padding: 1.8em 16px; font-size: var(--font-size); line-height: var(--line-height); -webkit-overflow-scrolling: touch; }
+.reader-content p { margin-bottom: 0.8em; text-indent: 2em; }
 
-.toc-list {
-  flex: 1; overflow-y: auto; padding: 0;
-  -webkit-overflow-scrolling: touch;
-}
-.toc-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px; border-bottom: 1px solid var(--border-color);
-  cursor: pointer; transition: background 0.15s;
-}
+.chapter-divider { text-align: center; font-size: 15px; font-weight: 700; padding: 28px 0 14px; color: var(--accent); letter-spacing: 2px; }
+
+/* Reader bottom menu */
+.reader-menu { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-card); padding: 12px 16px 20px; transform: translateY(100%); transition: transform 0.3s ease; box-shadow: 0 -2px 12px rgba(0,0,0,0.1); z-index: 20; }
+.reader-menu.show { transform: translateY(0); }
+.menu-row { display: flex; justify-content: space-around; margin-bottom: 10px; }
+.menu-btn { background: none; border: none; color: var(--text-primary); font-size: 13px; padding: 8px 12px; border-radius: 8px; }
+.menu-btn:active { background: var(--accent-light); }
+.menu-progress { height: 3px; background: var(--border-color); border-radius: 2px; overflow: hidden; }
+.menu-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.3s; }
+.menu-progress-text { font-size: 11px; color: var(--text-secondary); text-align: center; margin-top: 6px; }
+
+/* === TOC === */
+.toc-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; }
+.toc-header .header-back { font-size: 14px; color: var(--text-secondary); cursor: pointer; }
+.toc-header .toc-title { font-size: 17px; font-weight: 700; }
+.toc-header .toc-spacer { width: 36px; }
+
+.toc-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.toc-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 18px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
 .toc-item:active { background: var(--accent-light); }
 .toc-item.current { background: var(--accent-light); font-weight: 600; }
 .toc-item.read { color: var(--text-secondary); }
-.toc-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
-.toc-badge {
-  font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 8px;
-  background: var(--accent); color: #fff; white-space: nowrap;
-}
-.toc-badge.read { background: transparent; color: var(--text-secondary); }
+.toc-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toc-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; white-space: nowrap; }
+.toc-badge.current { background: var(--accent); color: #fff; }
+.toc-badge.read { color: var(--text-secondary); }
 
-/* === Settings Overlay === */
+/* === Settings === */
 .settings-overlay { display: none; position: fixed; inset: 0; z-index: 100; }
 .settings-overlay.show { display: block; }
 .settings-backdrop { position: absolute; inset: 0; background: var(--overlay); }
-.settings-panel {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: var(--bg-card); border-radius: 16px 16px 0 0;
-  padding: 20px; animation: slideUp 0.3s ease;
-}
+.settings-panel { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-radius: 16px 16px 0 0; padding: 20px; transform: translateY(100%); animation: slideUp 0.3s ease forwards; }
+.settings-overlay.show .settings-panel { transform: translateY(0); }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.settings-title { font-size: 16px; text-align: center; margin-bottom: 16px; }
-.settings-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 0; border-bottom: 1px solid var(--border-color);
-}
-.settings-select {
-  padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color);
-  background: var(--bg-surface); color: var(--text-primary); font-size: 14px;
-}
 
-/* Toggle switch */
+.settings-title { font-size: 16px; font-weight: 600; text-align: center; margin-bottom: 16px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+
+/* Toggle */
 .toggle { position: relative; display: inline-block; width: 48px; height: 28px; }
 .toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-  position: absolute; inset: 0; border-radius: 28px;
-  background: var(--border-color); transition: var(--transition); cursor: pointer;
-}
-.toggle-slider::before {
-  content: ''; position: absolute; width: 22px; height: 22px;
-  left: 3px; bottom: 3px; border-radius: 50%;
-  background: #fff; transition: var(--transition);
-}
+.toggle-slider { position: absolute; inset: 0; border-radius: 28px; background: var(--border-color); transition: 0.3s; }
+.toggle-slider::before { content: ''; position: absolute; width: 22px; height: 22px; left: 3px; bottom: 3px; border-radius: 50%; background: #fff; transition: 0.3s; }
 .toggle input:checked + .toggle-slider { background: var(--accent); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-.font-size-control { display: flex; align-items: center; gap: 12px; }
-.font-btn {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1px solid var(--border-color); background: var(--bg-surface);
-  color: var(--text-primary); font-size: 14px; font-weight: 700; cursor: pointer;
-}
+/* Font size controls */
+.font-row { display: flex; align-items: center; gap: 12px; }
+.font-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-size: 14px; font-weight: 700; }
 .font-btn:active { background: var(--accent-light); }
 .font-label { font-size: 13px; color: var(--text-secondary); min-width: 36px; text-align: center; }
 
+.btn-done { display: block; width: 100%; margin-top: 12px; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; }
+.btn-done:active { opacity: 0.85; }
+
 /* === Dialog === */
-.dialog-overlay { position: fixed; inset: 0; z-index: 200;
-  background: var(--overlay); display: flex; align-items: center;
-  justify-content: center; }
-.dialog-box { background: var(--bg-card); border-radius: 12px;
-  padding: 24px; text-align: center; max-width: 280px; width: 80%; }
+.dialog-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: var(--overlay); align-items: center; justify-content: center; }
+.dialog-overlay.show { display: flex; }
+.dialog-box { background: var(--bg-card); border-radius: 12px; padding: 24px; text-align: center; max-width: 280px; width: 80%; }
 .dialog-text { font-size: 14px; margin-bottom: 16px; line-height: 1.6; }
 .dialog-text small { color: var(--text-secondary); font-size: 12px; }
-.dialog-buttons { display: flex; gap: 12px; }
-.btn-secondary, .btn-danger {
-  flex: 1; padding: 10px; border: none; border-radius: 8px;
-  font-size: 14px; cursor: pointer;
-}
-.btn-secondary { background: var(--bg-surface); color: var(--text-primary); }
-.btn-danger { background: #E05555; color: #fff; }
+.dialog-actions { display: flex; gap: 12px; }
+.btn-cancel { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; background: var(--bg-surface); color: var(--text-primary); }
+.btn-danger { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; background: #E05555; color: #fff; }
 
 /* === Toast === */
-.toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.8); color: #fff; padding: 10px 24px;
-  border-radius: 20px; font-size: 13px; z-index: 300;
-  opacity: 0; transition: opacity 0.3s; pointer-events: none;
-}
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
 .toast.show { opacity: 1; }
 
-/* === Header back button === */
-
-/* === Reader === */
-.reader-header {
-  display: flex; align-items: center; gap: 6px;
-  padding: 12px 16px; background: var(--bg-page);
-  z-index: 10;
-}
-.header-back { font-size: 14px; color: var(--text-secondary); cursor: pointer; padding: 4px 4px 4px 0; line-height: 1; }
-.header-title { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; }
-
-.reader-container {
-  flex: 1; overflow: hidden; position: relative;
-  perspective: 1200px;
-}
-
-.reader-content {
-  position: absolute; inset: 0; padding: 16px 20px;
-  overflow-y: auto; line-height: 1.9;
-  -webkit-overflow-scrolling: touch;
-  backface-visibility: hidden;
-  transform-origin: left center;
-  background: var(--bg-page);
-}
-
-/* Scroll mode */
-.reader-content.scroll-mode {
-  position: relative; overflow-y: auto; height: 100%;
-}
-
-.reader-next {
-  transform: rotateY(180deg);
-}
-
-/* Page curl container */
-.page-curl-container {
-  position: absolute; inset: 0;
-  transform-style: preserve-3d;
-  transition: transform 0.5s ease;
-}
-.page-curl-container.flipped {
-  transform: rotateY(-180deg);
-}
-
-/* Page curl shadow effect on the flipping page */
-.page-curl-shadow {
-  position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(to right, rgba(0,0,0,0.15), transparent 30%);
-  opacity: 0; transition: opacity 0.5s;
-}
-.page-curl-container.flipped .page-curl-shadow { opacity: 1; }
-
-.reader-footer {
-  padding: 8px 20px; text-align: center;
-  background: var(--bg-page); opacity: 0; transition: opacity 0.3s;
-}
-.reader-footer.visible { opacity: 1; }
-.progress-bar {
-  height: 3px; background: var(--border-color);
-  border-radius: 2px; margin-bottom: 4px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; background: var(--accent);
-  border-radius: 2px; transition: width 0.3s;
-  width: 0%;
-}
-.progress-text { font-size: 11px; color: var(--text-secondary); }
-
-/* Page text styles based on font size */
-.reader-content.font-sm { font-size: var(--font-size-sm); }
-.reader-content.font-md { font-size: var(--font-size-md); }
-.reader-content.font-lg { font-size: var(--font-size-lg); }
-.reader-content.font-xl { font-size: var(--font-size-xl); }
-.reader-content.font-xxl { font-size: var(--font-size-xxl); }
-
-.reader-content p { margin-bottom: 0.8em; text-indent: 2em; }
-
-.chapter-divider {
-  text-align: center; font-size: 15px; font-weight: 700;
-  padding: 24px 0 16px; color: var(--accent);
-  letter-spacing: 2px;
-}
-
-/* === Reader Bottom Menu === */
-.reader-menu {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: var(--bg-card); padding: 12px 16px 20px;
-  transform: translateY(100%); transition: transform 0.3s ease;
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.1); z-index: 20;
-}
-.reader-menu.show { transform: translateY(0); }
-.menu-row { display: flex; justify-content: space-around; margin-bottom: 10px; }
-.menu-btn {
-  background: none; border: none; color: var(--text-primary);
-  font-size: 13px; cursor: pointer; padding: 8px 12px;
-  border-radius: 8px; transition: background 0.15s;
-}
-.menu-btn:active { background: var(--accent-light); }
-.menu-progress .progress-fill { height: 2px; }
+/* === Font size utility classes === */
+.font-sm { --font-size: 14px; }
+.font-md { --font-size: 16px; }
+.font-lg { --font-size: 18px; }
+.font-xl { --font-size: 20px; }
+.font-xxl { --font-size: 22px; }
 </style>
 </head>
-<body>
-
-<!-- Bookshelf Page -->
-<div id="bookshelf-page" class="page active">
-  <div class="shelf-header">
-    <h1 class="shelf-title">我的书架</h1>
-  </div>
-  <div id="book-list" class="book-list"></div>
-  <div id="empty-state" class="empty-state">
-    <div class="empty-icon">📚</div>
-    <p class="empty-text">书架空空如也</p>
-    <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
-  </div>
-  <div class="shelf-footer">
-    <button id="import-btn" class="btn-primary">导入小说</button>
-    <input type="file" id="file-input" accept=".txt,text/plain" style="display:none">
-  </div>
-</div>
-
-<!-- Reader Page -->
-<div id="reader-page" class="page">
-  <div id="reader-header" class="reader-header">
-    <span id="header-back" class="header-back">←</span>
-    <span id="header-title" class="header-title"></span>
-  </div>
-  <div id="reader-container" class="reader-container">
-    <div id="reader-content" class="reader-content"></div>
-    <div id="reader-next" class="reader-content reader-next"></div>
-  </div>
-  <div id="reader-footer" class="reader-footer">
-    <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-    <span id="progress-text" class="progress-text"></span>
-  </div>
-  <div id="reader-menu" class="reader-menu">
-    <div class="menu-row">
-      <button id="menu-toc" class="menu-btn">📑 目录</button>
-      <button id="menu-night" class="menu-btn">🌙 夜间</button>
-      <button id="menu-eye" class="menu-btn">🛡️ 护眼</button>
-      <button id="menu-settings" class="menu-btn">⚙️ 设置</button>
-    </div>
-    <div class="menu-progress">
-      <div class="progress-bar"><div id="menu-progress-fill" class="progress-fill"></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- TOC Page -->
-<div id="toc-page" class="page">
-  <div class="toc-header">
-    <span id="toc-back" class="header-back">←</span>
-    <span class="toc-title">目录</span>
-    <span style="width:48px"></span>
-  </div>
-  <div id="toc-list" class="toc-list"></div>
-</div>
-
-<!-- Settings Panel (overlay on reader) -->
-<div id="settings-overlay" class="settings-overlay">
-  <div class="settings-backdrop"></div>
-  <div class="settings-panel">
-    <h3 class="settings-title">阅读设置</h3>
-    <div class="settings-item">
-      <span>🌙 夜间模式</span>
-      <label class="toggle"><input type="checkbox" id="setting-night"><span class="toggle-slider"></span></label>
-    </div>
-    <div class="settings-item">
-      <span>🛡️ 护眼模式</span>
-      <label class="toggle"><input type="checkbox" id="setting-eye"><span class="toggle-slider"></span></label>
-    </div>
-    <div class="settings-item">
-      <span>📖 翻页方式</span>
-      <select id="setting-pagemode" class="settings-select">
-        <option value="curl">仿真卷页</option>
-        <option value="scroll">上下翻页</option>
-      </select>
-    </div>
-    <div class="settings-item">
-      <span>🔤 字号</span>
-      <div class="font-size-control">
-        <button id="font-down" class="font-btn">A-</button>
-        <span id="font-label" class="font-label">标准</span>
-        <button id="font-up" class="font-btn">A+</button>
-      </div>
-    </div>
-    <button id="settings-close" class="btn-primary">完成</button>
-  </div>
-</div>
-
-<!-- Delete Confirm Dialog -->
-<div id="delete-dialog" class="dialog-overlay" style="display:none">
-  <div class="dialog-box">
-    <p class="dialog-text">确定要删除这本书吗？<br><small>此操作不可恢复</small></p>
-    <div class="dialog-buttons">
-      <button id="delete-cancel" class="btn-secondary">取消</button>
-      <button id="delete-confirm" class="btn-danger">删除</button>
-    </div>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast" class="toast"></div>
-
-<script>
-// ===== STORAGE MANAGER =====
-const Storage = {
-  get(key) {
-    try { return JSON.parse(localStorage.getItem(key)); }
-    catch { return null; }
-  },
-  set(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-    catch (e) {
-      if (e.name === 'QuotaExceededError') {
-        Toast.show('存储空间不足，请清理旧书后重试');
-      }
-      return false;
-    }
-  },
-  remove(key) { localStorage.removeItem(key); },
-
-  // Books list
-  getBooks() { return this.get('novel_books') || []; },
-  saveBooks(books) { return this.set('novel_books', books); },
-
-  // Single book meta
-  getBookMeta(id) { return this.get('novel_' + id + '_meta'); },
-  saveBookMeta(id, meta) { return this.set('novel_' + id + '_meta', meta); },
-
-  // Full text
-  getBookText(id) { return localStorage.getItem('novel_' + id + '_text') || ''; },
-  saveBookText(id, text) {
-    try { localStorage.setItem('novel_' + id + '_text', text); return true; }
-    catch (e) { return false; }
-  },
-  removeBookText(id) { localStorage.removeItem('novel_' + id + '_text'); },
-
-  // Reading progress
-  getProgress(id) { return this.get('novel_' + id + '_progress') || { chapterIndex: 0, scrollPos: 0, timestamp: 0 }; },
-  saveProgress(id, p) { return this.set('novel_' + id + '_progress', { chapterIndex: 0, scrollPos: 0, currentPage: 0, ...p, timestamp: Date.now() }); },
-
-  // Settings
-  getSettings() { return this.get('novel_settings') || { theme: 'day', eyeCare: false, pageMode: 'curl', fontSize: 'md' }; },
-  saveSettings(s) { return this.set('novel_settings', s); },
-
-  // Remove entire book
-  removeBook(id) {
-    this.removeBookText(id);
-    this.remove('novel_' + id + '_meta');
-    this.remove('novel_' + id + '_progress');
-  },
-
-  getStorageUsage() {
-    let total = 0;
-    for (let k in localStorage) { if (localStorage.hasOwnProperty(k) && k.startsWith('novel_')) { total += localStorage.getItem(k).length; } }
-    return total;
-  }
-};
-
-// ===== TOAST =====
-const Toast = {
-  timer: null,
-  show(msg, duration = 2000) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => el.classList.remove('show'), duration);
-  }
-};
-
-// ===== CHAPTER PARSER =====
-const ChapterParser = {
-  // Chinese numeral mapping for parsing
-  _cnNums: '零一二三四五六七八九十百千',
-
-  parse(text) {
-    if (!text || text.trim().length === 0) return [{ title: '正文', start: 0 }];
-
-    const lines = text.split(/\r?\n/);
-    const patterns = [
-      /^第[0-9零一二三四五六七八九十百千]+[章节卷回集].*/,
-      /^Chapter\s+\d+/i,
-      /^Ch\.\s*\d+/i,
-      /^(序章|楔子|前言|引子|序幕|尾声|后记|终章|结局|番外|外传|附篇).*/,
-      /^[一二三四五六七八九十]+[、，.\s].*/,
-    ];
-
-    const matches = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.length === 0) continue;
-      for (const pat of patterns) {
-        if (pat.test(line)) {
-          matches.push({ title: line.slice(0, 40), start: i });
-          break;
-        }
-      }
-    }
-
-    // Merge: keep first match for consecutive matches on nearby lines
-    const filtered = [];
-    for (let i = 0; i < matches.length; i++) {
-      if (i === 0 || matches[i].start - matches[i - 1].start > 5) {
-        filtered.push(matches[i]);
-      }
-    }
-
-    // Build chapters: each chapter spans from its start to the next chapter's start
-    const chapters = [];
-    for (let i = 0; i < filtered.length; i++) {
-      const title = filtered[i].title;
-      const startIdx = filtered[i].start;
-      const endIdx = i + 1 < filtered.length ? filtered[i + 1].start : lines.length;
-      const contentLines = lines.slice(startIdx, endIdx);
-      const bodyLines = contentLines.slice(1); // skip the title line itself
-      const body = bodyLines.join('\n').trim();
-
-      if (body.length >= 50) { // filter empty chapters
-        chapters.push({ title, body });
-      }
-    }
-
-    // If no chapters found, create one chapter with all content
-    if (chapters.length === 0) {
-      const allText = lines.join('\n').trim();
-      if (allText.length >= 50) {
-        chapters.push({ title: '正文', body: allText });
-      }
-    }
-
-    // If still empty (very short text), still create at least one chapter
-    if (chapters.length === 0 && text.trim().length > 0) {
-      chapters.push({ title: '正文', body: text.trim() });
-    }
-
-    return chapters;
-  }
-};
-
-// ===== BOOKSHELF MANAGER =====
-const Bookshelf = {
-  init() {
-    document.getElementById('import-btn').addEventListener('click', () => {
-      document.getElementById('file-input').click();
-    });
-    document.getElementById('file-input').addEventListener('change', (e) => {
-      if (e.target.files[0]) this.importFile(e.target.files[0]);
-      e.target.value = '';
-    });
-    document.addEventListener('click', (e) => this._hideLongPress(e));
-    this.render();
-  },
-
-  async importFile(file) {
-    try { alert('step1: got file ' + file.name + ' ' + file.size); } catch {}
-
-    if (file.size > 20 * 1024 * 1024) {
-      Toast.show('文件过大（超过20MB），请使用较小的文件');
-      return;
-    }
-
-    Toast.show('正在导入...');
-
-    let text;
-    try {
-      text = await file.text();
-      try { alert('step2: text length=' + text.length); } catch {}
-    } catch (e) {
-      try { alert('step2 error: ' + e.message); } catch {}
-      Toast.show('文件读取失败');
-      return;
-    }
-
-    if (!text || text.trim().length === 0) {
-      Toast.show('文件内容为空');
-      return;
-    }
-
-    const chapters = ChapterParser.parse(text);
-    try { alert('step3: chapters=' + chapters.length); } catch {}
-
-    if (chapters.length === 0) {
-      Toast.show('无法识别任何章节内容');
-      return;
-    }
-
-    const firstTitle = chapters[0].title;
-    const fileName = file.name.replace(/\.(txt|TXT)$/, '');
-    const title = firstTitle.includes('章') ? fileName : firstTitle;
-    const bookId = 'b_' + Date.now();
-
-    const saved = Storage.saveBookText(bookId, text);
-    try { alert('step4: text saved=' + saved + ' bookId=' + bookId); } catch {}
-    if (!saved) {
-      Toast.show('存储空间不足，请先清理旧书');
-      return;
-    }
-
-    const meta = {
-      title, author: '',
-      totalChapters: chapters.length,
-      chapterTitles: chapters.map(c => c.title),
-      chapterStarts: [], createdAt: Date.now(),
-    };
-    Storage.saveBookMeta(bookId, meta);
-
-    const books = Storage.getBooks();
-    books.push({ id: bookId, title, totalChapters: chapters.length, createdAt: Date.now() });
-    Storage.saveBooks(books);
-    Storage.saveProgress(bookId, { chapterIndex: 0, scrollPos: 0, timestamp: Date.now() });
-
-    try { alert('step5: books count=' + books.length); } catch {}
-
-    this.render();
-    Toast.show('导入成功！共识别 ' + chapters.length + ' 章');
-  },
-
-  render() {
-    const books = Storage.getBooks();
-    const listEl = document.getElementById('book-list');
-    const emptyEl = document.getElementById('empty-state');
-
-    if (books.length === 0) {
-      emptyEl.classList.add('show');
-      listEl.innerHTML = '';
-    } else {
-      emptyEl.classList.remove('show');
-    }
-
-    listEl.innerHTML = books.map(b => {
-      const progress = Storage.getProgress(b.id);
-      const totalCh = b.totalChapters || 0;
-      const pct = totalCh > 0 ? Math.round((progress.chapterIndex / totalCh) * 100) : 0;
-      return `
-        <div class="book-card" data-id="${b.id}">
-          <button class="book-delete" data-action="delete" data-id="${b.id}">×</button>
-          <div class="book-cover">📖</div>
-          <div class="book-name">${this._esc(b.title)}</div>
-          <div class="book-progress">${pct}% · ${totalCh}章</div>
-        </div>`;
-    }).join('');
-
-    // Click to open book
-    listEl.querySelectorAll('.book-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.dataset.action === 'delete') return;
-        App.openBook(card.dataset.id);
-      });
-
-      // Long press for delete
-      let pressTimer;
-      card.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(() => {
-          listEl.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
-          card.classList.add('long-press');
-        }, 600);
-      });
-      card.addEventListener('touchend', () => clearTimeout(pressTimer));
-      card.addEventListener('touchmove', () => clearTimeout(pressTimer));
-    });
-
-    // Delete button clicks
-    listEl.querySelectorAll('.book-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this._confirmDelete(btn.dataset.id);
-      });
-    });
-
-  },
-
-  _hideLongPress(e) {
-    if (!e.target.closest('.book-card')) {
-      document.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
-    }
-  },
-
-  _confirmDelete(bookId) {
-    const dialog = document.getElementById('delete-dialog');
-    dialog.style.display = 'flex';
-    document.getElementById('delete-cancel').onclick = () => { dialog.style.display = 'none'; };
-    document.getElementById('delete-confirm').onclick = () => {
-      const books = Storage.getBooks().filter(b => b.id !== bookId);
-      Storage.saveBooks(books);
-      Storage.removeBook(bookId);
-      dialog.style.display = 'none';
-      this.render();
-      Toast.show('已删除');
-    };
-  },
-
-  _esc(s) {
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
-  }
-};
-
-// ===== APP SHELL =====
-const App = {
-  currentBookId: null,
-
-  init() {
-    Bookshelf.init();
-    this.bindNavigation();
-  },
-
-  bindNavigation() {
-    document.getElementById('header-back').addEventListener('click', () => this.showBookshelf());
-    document.getElementById('menu-toc').addEventListener('click', () => this.showTOC());
-    document.getElementById('toc-back').addEventListener('click', () => this.showReader());
-    const readerContainer = document.getElementById('reader-container');
-    readerContainer.addEventListener('click', (e) => this._handleReaderTap(e));
-    document.getElementById('menu-settings').addEventListener('click', () => Settings.show());
-    document.getElementById('settings-close').addEventListener('click', () => Settings.hide());
-    document.querySelector('.settings-backdrop').addEventListener('click', () => Settings.hide());
-    document.getElementById('menu-night').addEventListener('click', () => Settings.toggleNight());
-    document.getElementById('menu-eye').addEventListener('click', () => Settings.toggleEyeCare());
-    // Volume key page turning
-    document.addEventListener('keydown', (e) => this._handleKeyDown(e));
-  },
-
-  showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(id + '-page').classList.add('active');
-  },
-
-  showBookshelf() {
-    this.currentBookId = null;
-    this.showPage('bookshelf');
-    Bookshelf.render();
-  },
-
-  openBook(bookId) {
-    this.currentBookId = bookId;
-    this.showPage('reader');
-    Reader.init(bookId);
-  },
-
-  showReader() {
-    this.showPage('reader');
-  },
-
-  showTOC() {
-    const meta = Storage.getBookMeta(this.currentBookId);
-    if (!meta) return;
-    this.showPage('toc');
-    const list = document.getElementById('toc-list');
-    const progress = Storage.getProgress(this.currentBookId);
-    list.innerHTML = meta.chapterTitles.map((t, i) => {
-      let cls = 'toc-item';
-      let badge = '';
-      if (i === progress.chapterIndex) { cls += ' current'; badge = '<span class="toc-badge">当前</span>'; }
-      else if (i < progress.chapterIndex) { cls += ' read'; badge = '<span class="toc-badge read">已读</span>'; }
-      return `<div class="${cls}" data-chapter="${i}"><span class="toc-item-title">${Bookshelf._esc(t)}</span>${badge}</div>`;
-    }).join('');
-
-    list.querySelectorAll('.toc-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const chIdx = parseInt(item.dataset.chapter);
-        Reader.loadChapter(chIdx);
-        this.showReader();
-      });
-    });
-  },
-
-  _handleReaderTap(e) {
-    const mode = Storage.getSettings().pageMode;
-    if (mode === 'scroll') {
-      Reader.toggleMenu();
-      return;
-    }
-    const x = e.clientX;
-    const w = window.innerWidth;
-    if (x < w * 0.2) Reader.prevPage();
-    else if (x > w * 0.8) Reader.nextPage();
-    else Reader.toggleMenu();
-  },
-
-  _handleKeyDown(e) {
-    // Only handle volume keys when reading a book
-    if (!this.currentBookId) return;
-    // Android WebView: keyCode 24 = VOLUME_UP, 25 = VOLUME_DOWN
-    // Standard: event.key "AudioVolumeUp" / "AudioVolumeDown"
-    if (e.key === 'AudioVolumeUp' || e.keyCode === 24) {
-      e.preventDefault();
-      Reader.prevPage();
-    } else if (e.key === 'AudioVolumeDown' || e.keyCode === 25) {
-      e.preventDefault();
-      Reader.nextPage();
-    }
-  },
-
-};
-
-// ===== READER ENGINE =====
-const Reader = {
-  bookId: null,
-  chapterIndex: 0,
-  meta: null,
-  currentPageContent: '',
-  nextPageContent: '',
-  currentPageStartPos: 0,
-  isFlipping: false,
-  menuVisible: false,
-  pageTexts: [],
-  currentPage: 0,
-  _autoLoading: false,
-
-  init(bookId) {
-    this.bookId = bookId;
-    this.meta = Storage.getBookMeta(bookId);
-    const progress = Storage.getProgress(bookId);
-    this.chapterIndex = progress.chapterIndex;
-    this.currentPageStartPos = progress.scrollPos || 0;
-    this._restoredPage = progress.currentPage || 0;
-
-    const settings = Storage.getSettings();
-    this.applySettings(settings);
-
-    const title = this.meta.chapterTitles[this.chapterIndex] || this.meta.title;
-    document.getElementById('header-title').textContent = title;
-
-    this.loadChapter(this.chapterIndex, this.currentPageStartPos, this._restoredPage);
-  },
-
-  applySettings(settings) {
-    document.body.classList.toggle('night', settings.theme === 'night');
-    document.body.classList.toggle('eye-care', settings.eyeCare);
-    document.getElementById('setting-night').checked = settings.theme === 'night';
-    document.getElementById('setting-eye').checked = settings.eyeCare;
-    document.getElementById('setting-pagemode').value = settings.pageMode;
-
-    const content = document.getElementById('reader-content');
-    content.className = 'reader-content font-' + (settings.fontSize || 'md');
-
-    if (settings.pageMode === 'scroll') {
-      content.classList.add('scroll-mode');
-      document.getElementById('reader-next').style.display = 'none';
-    } else {
-      document.getElementById('reader-next').style.display = '';
-    }
-  },
-
-  loadChapter(chIdx, startPos = 0, pageNum = 0) {
-    this.chapterIndex = chIdx;
-    this.currentPageStartPos = startPos;
-    this.currentPage = pageNum;
-
-    const text = Storage.getBookText(this.bookId);
-    const chapters = ChapterParser.parse(text);
-
-    const mode = Storage.getSettings().pageMode;
-    if (mode === 'scroll') {
-      this._renderScrollAll(chapters, chIdx);
-    } else {
-      const chapter = chapters[chIdx];
-      if (!chapter) return;
-      const title = this.meta.chapterTitles[chIdx] || chapter.title;
-      document.getElementById('header-title').textContent = title;
-      this.meta.chapterTitles[chIdx] = title;
-      this._paginate(chapter.body);
-      this._renderCurlPage();
-    }
-
-    this.updateProgress();
-    this._saveProgress();
-  },
-
-  _renderScrollAll(chapters, startChapter) {
-    const contentEl = document.getElementById('reader-content');
-    contentEl.classList.add('scroll-mode');
-    document.getElementById('reader-next').style.display = 'none';
-
-    // Build continuous HTML with chapter separators
-    let html = '';
-    for (let i = 0; i < chapters.length; i++) {
-      const ch = chapters[i];
-      const title = this.meta.chapterTitles[i] || ch.title;
-      html += '<div class="chapter-divider" data-chapter="' + i + '">' + this._escHtml(title) + '</div>';
-      html += this._formatText(ch.body || '');
-    }
-    contentEl.innerHTML = html;
-
-    // Position to starting chapter
-    const dividers = contentEl.querySelectorAll('.chapter-divider');
-    if (dividers[startChapter]) {
-      contentEl.scrollTop = dividers[startChapter].offsetTop - 60;
-    }
-    this.currentPageStartPos = contentEl.scrollTop;
-
-    // Update header
-    const startTitle = this.meta.chapterTitles[startChapter] || chapters[startChapter].title;
-    document.getElementById('header-title').textContent = startTitle;
-
-    contentEl.onscroll = () => {
-      this.currentPageStartPos = contentEl.scrollTop;
-      this._saveProgress();
-
-      // Detect current chapter from scroll position
-      let visibleChapter = 0;
-      for (let i = dividers.length - 1; i >= 0; i--) {
-        if (dividers[i].offsetTop <= contentEl.scrollTop + 100) {
-          visibleChapter = i;
-          break;
-        }
-      }
-      if (visibleChapter !== this.chapterIndex) {
-        this.chapterIndex = visibleChapter;
-        const visTitle = this.meta.chapterTitles[visibleChapter] || chapters[visibleChapter].title;
-        document.getElementById('header-title').textContent = visTitle;
-      }
-
-      this.updateProgress();
-    };
-  },
-    this.pageTexts = [];
-    if (!body || body.trim().length === 0) {
-      this.pageTexts = [''];
-      return;
-    }
-
-    const settings = Storage.getSettings();
-    const fontSizeMap = { sm: 14, md: 16, lg: 18, xl: 20, xxl: 22 };
-    const fontSize = fontSizeMap[settings.fontSize] || 16;
-    const charsPerLine = Math.floor((window.innerWidth - 40) / (fontSize * 0.6));
-    const linesPerPage = Math.floor((window.innerHeight - 180) / (fontSize * 1.9));
-    const charsPerPage = charsPerLine * linesPerPage;
-
-    const paragraphs = body.split(/\n+/).filter(p => p.trim());
-    let currentChunk = '';
-    for (const para of paragraphs) {
-      const candidate = currentChunk + (currentChunk ? '\n\n' : '') + para;
-      if (candidate.length > charsPerPage && currentChunk.length > 0) {
-        this.pageTexts.push(currentChunk);
-        currentChunk = para;
-      } else {
-        currentChunk = candidate;
-      }
-    }
-    if (currentChunk) this.pageTexts.push(currentChunk);
-    if (this.pageTexts.length === 0) this.pageTexts = [''];
-  },
-
-  _renderCurlPage() {
-    const contentEl = document.getElementById('reader-content');
-    contentEl.classList.remove('scroll-mode');
-    document.getElementById('reader-next').style.display = '';
-
-    const text = this.pageTexts[this.currentPage] || '';
-    contentEl.innerHTML = this._formatText(text);
-    contentEl.scrollTop = 0;
-
-    if (this.currentPage + 1 < this.pageTexts.length) {
-      const nextEl = document.getElementById('reader-next');
-      nextEl.innerHTML = this._formatText(this.pageTexts[this.currentPage + 1]);
-    }
-
-    this.updateProgress();
-  },
-
-  _formatText(text) {
-    if (!text) return '<p style="color:var(--text-secondary)">（本章内容为空）</p>';
-    const paragraphs = text.split(/\n+/).filter(p => p.trim());
-    return paragraphs.map(p => `<p>${this._escHtml(p.trim())}</p>`).join('');
-  },
-
-  _escHtml(s) {
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
-  },
-
-  nextPage() {
-    const mode = Storage.getSettings().pageMode;
-    if (mode === 'scroll') return;
-
-    if (this.currentPage + 1 < this.pageTexts.length) {
-      this._animateFlip('next');
-    } else if (this.chapterIndex + 1 < this.meta.totalChapters) {
-      this.loadChapter(this.chapterIndex + 1, 0);
-    } else {
-      Toast.show('已经是最后一页了');
-    }
-  },
-
-  prevPage() {
-    const mode = Storage.getSettings().pageMode;
-    if (mode === 'scroll') return;
-
-    if (this.currentPage > 0) {
-      this._animateFlip('prev');
-    } else if (this.chapterIndex > 0) {
-      this.loadChapter(this.chapterIndex - 1, 0);
-      this.currentPage = this.pageTexts.length - 1;
-      this._renderCurlPage();
-    } else {
-      Toast.show('已经是第一页了');
-    }
-  },
-
-  _animateFlip(direction) {
-    if (this.isFlipping) return;
-    this.isFlipping = true;
-
-    const container = document.getElementById('reader-container');
-    const content = document.getElementById('reader-content');
-    const next = document.getElementById('reader-next');
-
-    if (direction === 'next') {
-      this.currentPage++;
-      const nextText = this.pageTexts[this.currentPage] || '';
-      next.innerHTML = this._formatText(nextText);
-      next.scrollTop = 0;
-
-      const flipWrap = document.createElement('div');
-      flipWrap.className = 'page-curl-container';
-      flipWrap.style.cssText = 'position:absolute;inset:0;z-index:5;';
-      content.parentNode.insertBefore(flipWrap, content);
-      flipWrap.appendChild(content);
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          flipWrap.classList.add('flipped');
-        });
-      });
-
-      setTimeout(() => {
-        flipWrap.parentNode.insertBefore(content, flipWrap);
-        flipWrap.remove();
-        content.innerHTML = this._formatText(this.pageTexts[this.currentPage]);
-        content.scrollTop = 0;
-        next.innerHTML = this._formatText(this.pageTexts[this.currentPage + 1] || '');
-        this.updateProgress();
-        this._saveProgress();
-        this.isFlipping = false;
-      }, 500);
-    } else {
-      this.currentPage--;
-      content.innerHTML = this._formatText(this.pageTexts[this.currentPage]);
-      content.scrollTop = 0;
-      next.innerHTML = this._formatText(this.pageTexts[this.currentPage + 1] || '');
-      this.updateProgress();
-      this._saveProgress();
-      this.isFlipping = false;
-    }
-  },
-
-  toggleMenu() {
-    const menu = document.getElementById('reader-menu');
-    const footer = document.getElementById('reader-footer');
-    this.menuVisible = !this.menuVisible;
-    menu.classList.toggle('show', this.menuVisible);
-    footer.classList.toggle('visible', this.menuVisible);
-  },
-
-  updateProgress() {
-    const mode = Storage.getSettings().pageMode;
-    let chapterProg = 0;
-    if (mode === 'scroll') {
-      const el = document.getElementById('reader-content');
-      if (el.scrollHeight > el.clientHeight) {
-        chapterProg = Math.round((el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100);
-      }
-    } else {
-      chapterProg = this.pageTexts.length > 1
-        ? Math.round((this.currentPage / (this.pageTexts.length - 1)) * 100) : 0;
-    }
-    const totalCh = this.meta.totalChapters || 1;
-    const bookProg = Math.round(((this.chapterIndex + chapterProg / 100) / totalCh) * 100);
-
-    document.getElementById('progress-fill').style.width = chapterProg + '%';
-    document.getElementById('menu-progress-fill').style.width = chapterProg + '%';
-    document.getElementById('progress-text').textContent =
-      (this.meta.chapterTitles[this.chapterIndex] || '') + ' · ' + bookProg + '%';
-  },
-
-  _saveProgress() {
-    if (!this.bookId) return;
-    Storage.saveProgress(this.bookId, {
-      chapterIndex: this.chapterIndex,
-      scrollPos: this.currentPageStartPos,
-      currentPage: this.currentPage,
-      timestamp: Date.now(),
-    });
-  }
-};
-
-// ===== SETTINGS MANAGER =====
-const Settings = {
-  _fontLabels: ['小', '较小', '标准', '较大', '大'],
-  _fontValues: ['sm', 'sm', 'md', 'lg', 'xl', 'xxl'],
-
-  init() {
-    const s = Storage.getSettings();
-    this._applyToUI(s);
-
-    document.getElementById('setting-night').addEventListener('change', (e) => {
-      this._update('theme', e.target.checked ? 'night' : 'day');
-      this._apply();
-    });
-    document.getElementById('setting-eye').addEventListener('change', (e) => {
-      this._update('eyeCare', e.target.checked);
-      this._apply();
-    });
-    document.getElementById('setting-pagemode').addEventListener('change', (e) => {
-      this._update('pageMode', e.target.value);
-      this._apply();
-      if (App.currentBookId) {
-        Reader.loadChapter(Reader.chapterIndex, 0);
-      }
-    });
-
-    document.getElementById('font-down').addEventListener('click', () => {
-      const s = Storage.getSettings();
-      const currentVal = s.fontSize || 'md';
-      const currentIdx = ['sm', 'md', 'lg', 'xl', 'xxl'].indexOf(currentVal);
-      const newIdx = Math.max(0, currentIdx - 1);
-      const newVal = ['sm', 'md', 'lg', 'xl', 'xxl'][newIdx];
-      this._update('fontSize', newVal);
-      document.getElementById('font-label').textContent = this._fontLabels[newIdx];
-      this._apply();
-      if (App.currentBookId) Reader.loadChapter(Reader.chapterIndex, Reader.currentPageStartPos);
-    });
-    document.getElementById('font-up').addEventListener('click', () => {
-      const s = Storage.getSettings();
-      const currentVal = s.fontSize || 'md';
-      const currentIdx = ['sm', 'md', 'lg', 'xl', 'xxl'].indexOf(currentVal);
-      const newIdx = Math.min(4, currentIdx + 1);
-      const newVal = ['sm', 'md', 'lg', 'xl', 'xxl'][newIdx];
-      this._update('fontSize', newVal);
-      document.getElementById('font-label').textContent = this._fontLabels[newIdx];
-      this._apply();
-      if (App.currentBookId) Reader.loadChapter(Reader.chapterIndex, Reader.currentPageStartPos);
-    });
-
-    const curVal = s.fontSize || 'md';
-    const curIdx = ['sm', 'md', 'lg', 'xl', 'xxl'].indexOf(curVal);
-    document.getElementById('font-label').textContent = this._fontLabels[curIdx];
-  },
-
-  show() {
-    const s = Storage.getSettings();
-    this._applyToUI(s);
-    document.getElementById('settings-overlay').classList.add('show');
-  },
-
-  hide() {
-    document.getElementById('settings-overlay').classList.remove('show');
-  },
-
-  toggleNight() {
-    const s = Storage.getSettings();
-    s.theme = s.theme === 'night' ? 'day' : 'night';
-    Storage.saveSettings(s);
-    this._apply();
-  },
-
-  toggleEyeCare() {
-    const s = Storage.getSettings();
-    s.eyeCare = !s.eyeCare;
-    Storage.saveSettings(s);
-    this._apply();
-  },
-
-  _applyToUI(s) {
-    document.getElementById('setting-night').checked = s.theme === 'night';
-    document.getElementById('setting-eye').checked = s.eyeCare;
-    document.getElementById('setting-pagemode').value = s.pageMode || 'curl';
-  },
-
-  _update(key, value) {
-    const s = Storage.getSettings();
-    s[key] = value;
-    Storage.saveSettings(s);
-  },
-
-  _apply() {
-    const s = Storage.getSettings();
-    document.body.classList.toggle('night', s.theme === 'night');
-    document.body.classList.toggle('eye-care', s.eyeCare);
-    document.getElementById('menu-night').textContent = s.theme === 'night' ? '☀️ 白天' : '🌙 夜间';
-    document.getElementById('menu-eye').textContent = s.eyeCare ? '🛡️ 护眼 ✓' : '🛡️ 护眼';
-    if (App.currentBookId) {
-      Reader.applySettings(s);
-    }
-  }
-};
-
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
-  // Apply saved settings on load
-  const settings = Storage.getSettings();
-  document.body.classList.toggle('night', settings.theme === 'night');
-  document.body.classList.toggle('eye-care', settings.eyeCare);
-
-  Settings.init();
-  App.init();
-
-  // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            Toast.show('有新版本可用，请刷新页面');
-          }
-        });
-      });
-    }).catch(() => {});
-  }
-});
-
-</script>
-
-</body>
-</html>
