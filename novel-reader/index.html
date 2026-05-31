@@ -367,6 +367,119 @@ const Parser = {
     return chs;
   }
 };
+
+// ===== BOOKSHELF =====
+const Shelf = {
+  init() {
+    document.getElementById('btn-import').addEventListener('click', () => {
+      document.getElementById('file-input').click();
+    });
+    document.getElementById('file-input').addEventListener('change', e => {
+      if (e.target.files[0]) this.importFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.book-card')) {
+        document.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
+      }
+    });
+    this.render();
+  },
+
+  async importFile(file) {
+    if (file.size > 20 * 1024 * 1024) { T.show('文件过大（超过20MB）'); return; }
+    T.show('正在导入...');
+
+    let text;
+    try { text = await file.text(); }
+    catch { T.show('文件读取失败，请检查编码'); return; }
+
+    if (!text || !text.trim()) { T.show('文件内容为空'); return; }
+
+    const chs = Parser.parse(text);
+    if (!chs.length) { T.show('无法识别任何章节内容'); return; }
+
+    const name = file.name.replace(/\.(txt|TXT)$/, '');
+    const first = chs[0].title;
+    const title = first.includes('章') ? name : first;
+    const id = 'b_' + Date.now();
+
+    if (!S.saveText(id, text)) { T.show('存储空间不足，请先清理旧书'); return; }
+
+    const meta = { title, chapterTitles: chs.map(c => c.title), totalChapters: chs.length, createdAt: Date.now() };
+    S.saveMeta(id, meta);
+
+    const books = S.books();
+    books.push({ id, title, totalChapters: chs.length, createdAt: Date.now() });
+    S.saveBooks(books);
+    S.saveProgress(id, { chapterIndex: 0, scrollPos: 0 });
+
+    this.render();
+    T.show('导入成功！共 ' + chs.length + ' 章');
+  },
+
+  render() {
+    const books = S.books();
+    const grid = document.getElementById('book-grid');
+    const empty = document.getElementById('empty-state');
+
+    if (!books.length) {
+      empty.classList.add('show');
+      grid.innerHTML = '';
+      return;
+    }
+    empty.classList.remove('show');
+
+    grid.innerHTML = books.map(b => {
+      const prog = S.progress(b.id);
+      const total = b.totalChapters || 1;
+      const pct = Math.round((prog.chapterIndex / total) * 100);
+      const colors = ['#C9A96E,#8B6914', '#7B8FB2,#4A6078', '#8B7D6B,#5C5443', '#6B8E6B,#3D5A3D'];
+      const c = colors[Math.abs(b.id.charCodeAt(b.id.length - 1)) % colors.length];
+      return `<div class="book-card" data-id="${b.id}">
+        <button class="book-delete" data-action="delete" data-id="${b.id}">×</button>
+        <div class="book-cover" style="background:linear-gradient(135deg,${c})">📖</div>
+        <div class="book-name">${esc(b.title)}</div>
+        <div class="book-meta">${pct}% · ${b.totalChapters}章</div>
+      </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.book-card').forEach(card => {
+      card.addEventListener('click', e => {
+        if (e.target.dataset.action === 'delete') return;
+        App.openBook(card.dataset.id);
+      });
+      let t;
+      card.addEventListener('touchstart', () => { t = setTimeout(() => {
+        grid.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
+        card.classList.add('long-press');
+      }, 600); });
+      card.addEventListener('touchend', () => clearTimeout(t));
+      card.addEventListener('touchmove', () => clearTimeout(t));
+    });
+
+    grid.querySelectorAll('.book-delete').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        this.confirmDelete(btn.dataset.id);
+      });
+    });
+  },
+
+  confirmDelete(id) {
+    const dlg = document.getElementById('delete-dialog');
+    dlg.classList.add('show');
+    document.getElementById('delete-cancel').onclick = () => dlg.classList.remove('show');
+    document.getElementById('delete-confirm').onclick = () => {
+      const books = S.books().filter(b => b.id !== id);
+      S.saveBooks(books);
+      S.removeBook(id);
+      dlg.classList.remove('show');
+      this.render();
+      T.show('已删除');
+    };
+  }
+};
 </script>
 
 </body>
