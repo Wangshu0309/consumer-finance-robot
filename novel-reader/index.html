@@ -591,6 +591,94 @@ const Reader = {
     });
   }
 };
+
+// ===== TOC =====
+const TOC = {
+  show() {
+    const meta = Reader.meta;
+    if (!meta) return;
+    App.showPage('toc');
+    const list = document.getElementById('toc-list');
+    const cur = Reader.chapterIndex;
+    list.innerHTML = meta.chapterTitles.map((t, i) => {
+      let cls = 'toc-item';
+      let badge = '';
+      if (i === cur) { cls += ' current'; badge = '<span class="toc-badge current">当前</span>'; }
+      else if (i < cur) { cls += ' read'; badge = '<span class="toc-badge read">已读</span>'; }
+      return `<div class="${cls}" data-idx="${i}"><span class="toc-item-title">${esc(t)}</span>${badge}</div>`;
+    }).join('');
+
+    list.querySelectorAll('.toc-item').forEach(item => {
+      item.addEventListener('click', () => {
+        Reader.jumpToChapter(parseInt(item.dataset.idx));
+        App.showPage('reader');
+      });
+    });
+  }
+};
+
+// ===== SETTINGS =====
+const Settings = {
+  _labels: ['小', '较小', '标准', '较大', '大'],
+  _vals: ['sm', 'md', 'lg', 'xl', 'xxl'],
+
+  init() {
+    document.getElementById('setting-night').addEventListener('change', e => {
+      this._update('theme', e.target.checked ? 'night' : 'day');
+      this._apply();
+    });
+    document.getElementById('setting-eye').addEventListener('change', e => {
+      this._update('eyeCare', e.target.checked);
+      this._apply();
+    });
+    document.getElementById('font-down').addEventListener('click', () => {
+      const s = S.settings();
+      const idx = Math.max(0, this._vals.indexOf(s.fontSize || 'lg') - 1);
+      this._update('fontSize', this._vals[idx]);
+      document.getElementById('font-label').textContent = this._labels[idx];
+      this._apply();
+    });
+    document.getElementById('font-up').addEventListener('click', () => {
+      const s = S.settings();
+      const idx = Math.min(4, this._vals.indexOf(s.fontSize || 'lg') + 1);
+      this._update('fontSize', this._vals[idx]);
+      document.getElementById('font-label').textContent = this._labels[idx];
+      this._apply();
+    });
+    document.getElementById('settings-done').addEventListener('click', () => this.hide());
+    document.querySelector('.settings-backdrop').addEventListener('click', () => this.hide());
+
+    const s = S.settings();
+    const idx = this._vals.indexOf(s.fontSize || 'lg');
+    document.getElementById('font-label').textContent = this._labels[idx];
+  },
+
+  show() {
+    const s = S.settings();
+    document.getElementById('setting-night').checked = s.theme === 'night';
+    document.getElementById('setting-eye').checked = s.eyeCare;
+    document.getElementById('settings-overlay').classList.add('show');
+  },
+
+  hide() { document.getElementById('settings-overlay').classList.remove('show'); },
+
+  toggleTheme() {
+    const s = S.settings();
+    s.theme = s.theme === 'night' ? 'day' : 'night';
+    S.saveSettings(s);
+    this._apply();
+  },
+
+  toggleEye() {
+    const s = S.settings();
+    s.eyeCare = !s.eyeCare;
+    S.saveSettings(s);
+    this._apply();
+  },
+
+  _update(k, v) { const s = S.settings(); s[k] = v; S.saveSettings(s); },
+  _apply() { if (Reader.bookId) Reader.applySettings(S.settings()); }
+};
 </script>
 
 </body>
