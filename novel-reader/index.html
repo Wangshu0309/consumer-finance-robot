@@ -270,5 +270,104 @@ button:focus-visible, .toggle input:focus-visible + .toggle-slider, .toc-item:fo
 <!-- Toast -->
 <div id="toast" class="toast"></div>
 
+<script>
+// ===== UTILITY =====
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ===== STORAGE =====
+const S = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+    catch (e) { if (e.name === 'QuotaExceededError') T.show('存储空间不足'); return false; }
+  },
+  remove(k) { localStorage.removeItem(k); },
+
+  books() { return this.get('novel_books') || []; },
+  saveBooks(v) { return this.set('novel_books', v); },
+
+  meta(id) { return this.get('novel_' + id + '_meta'); },
+  saveMeta(id, v) { return this.set('novel_' + id + '_meta', v); },
+
+  text(id) { return localStorage.getItem('novel_' + id + '_text') || ''; },
+  saveText(id, v) {
+    try { localStorage.setItem('novel_' + id + '_text', v); return true; }
+    catch (e) { return false; }
+  },
+  removeText(id) { localStorage.removeItem('novel_' + id + '_text'); },
+
+  progress(id) { return this.get('novel_' + id + '_progress') || { chapterIndex: 0, scrollPos: 0 }; },
+  saveProgress(id, v) { return this.set('novel_' + id + '_progress', { ...v, timestamp: Date.now() }); },
+
+  settings() { return this.get('novel_settings') || { theme: 'day', eyeCare: false, fontSize: 'lg' }; },
+  saveSettings(v) { return this.set('novel_settings', v); },
+
+  removeBook(id) {
+    this.removeText(id);
+    this.remove('novel_' + id + '_meta');
+    this.remove('novel_' + id + '_progress');
+  }
+};
+
+// ===== TOAST =====
+const T = {
+  _timer: null,
+  show(msg, ms = 2000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => el.classList.remove('show'), ms);
+  }
+};
+
+// ===== CHAPTER PARSER =====
+const Parser = {
+  parse(text) {
+    if (!text || !text.trim()) return [];
+
+    const lines = text.split(/\r?\n/);
+    const pats = [
+      /^第[0-9零一二三四五六七八九十百千]+[章节卷回集].*/,
+      /^Chapter\s+\d+/i,
+      /^Ch\.\s*\d+/i,
+      /^(序章|楔子|前言|引子|序幕|尾声|后记|终章|结局|番外|外传|附篇).*/,
+      /^[一二三四五六七八九十]+[、，.\s].*/,
+    ];
+
+    const hits = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      for (const p of pats) {
+        if (p.test(line)) { hits.push({ title: line.slice(0, 40), idx: i }); break; }
+      }
+    }
+
+    const filtered = [];
+    for (let i = 0; i < hits.length; i++) {
+      if (i === 0 || hits[i].idx - hits[i - 1].idx > 5) filtered.push(hits[i]);
+    }
+
+    const chs = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const start = filtered[i].idx;
+      const end = i + 1 < filtered.length ? filtered[i + 1].idx : lines.length;
+      const body = lines.slice(start + 1, end).join('\n').trim();
+      if (body.length >= 50) chs.push({ title: filtered[i].title, body });
+    }
+
+    if (chs.length === 0 && text.trim().length > 0) {
+      chs.push({ title: '正文', body: text.trim() });
+    }
+    return chs;
+  }
+};
+</script>
+
 </body>
 </html>
