@@ -557,6 +557,176 @@ const ChapterParser = {
     return chapters;
   }
 };
+
+// ===== BOOKSHELF MANAGER =====
+const Bookshelf = {
+  init() {
+    document.getElementById('import-btn').addEventListener('click', () => {
+      document.getElementById('file-input').click();
+    });
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      if (e.target.files[0]) this.importFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    this.render();
+  },
+
+  async importFile(file) {
+    if (file.size > 20 * 1024 * 1024) {
+      Toast.show('文件过大（超过20MB），请使用较小的文件');
+      return;
+    }
+
+    Toast.show('正在导入...');
+
+    let text;
+    try {
+      // Try UTF-8 first
+      text = await file.text();
+      // Quick check: if garbled, try GBK
+      if (this._looksGarbled(text)) {
+        const buf = await file.arrayBuffer();
+        text = new TextDecoder('gbk').decode(buf);
+      }
+    } catch {
+      Toast.show('文件读取失败，请检查文件格式');
+      return;
+    }
+
+    if (!text || text.trim().length === 0) {
+      Toast.show('文件内容为空');
+      return;
+    }
+
+    const bookId = 'b_' + Date.now();
+    const chapters = ChapterParser.parse(text);
+
+    if (chapters.length === 0) {
+      Toast.show('无法识别任何章节内容');
+      return;
+    }
+
+    // Extract book title from first chapter or filename
+    const firstTitle = chapters[0].title;
+    const fileName = file.name.replace(/\.(txt|TXT)$/, '');
+    const title = firstTitle.includes('章') ? fileName : firstTitle;
+
+    // Save full text
+    const saved = Storage.saveBookText(bookId, text);
+    if (!saved) {
+      Toast.show('存储空间不足，请先清理旧书');
+      return;
+    }
+
+    // Save metadata
+    const meta = {
+      title,
+      author: '',
+      totalChapters: chapters.length,
+      chapterTitles: chapters.map(c => c.title),
+      chapterStarts: [],
+      createdAt: Date.now(),
+    };
+    Storage.saveBookMeta(bookId, meta);
+
+    // Add to books list
+    const books = Storage.getBooks();
+    books.push({ id: bookId, title, totalChapters: chapters.length, createdAt: Date.now() });
+    Storage.saveBooks(books);
+
+    // Initialize progress
+    Storage.saveProgress(bookId, { chapterIndex: 0, scrollPos: 0, timestamp: Date.now() });
+
+    this.render();
+    Toast.show('导入成功！共识别 ' + chapters.length + ' 章');
+  },
+
+  _looksGarbled(text) {
+    const sample = text.slice(0, 500);
+    const garbledCount = (sample.match(/[�\x00-\x08\x0b\x0c\x0e-\x1f]/g) || []).length;
+    return garbledCount > sample.length * 0.1;
+  },
+
+  render() {
+    const books = Storage.getBooks();
+    const listEl = document.getElementById('book-list');
+    const emptyEl = document.getElementById('empty-state');
+
+    if (books.length === 0) {
+      emptyEl.classList.add('show');
+      listEl.innerHTML = '';
+    } else {
+      emptyEl.classList.remove('show');
+    }
+
+    listEl.innerHTML = books.map(b => {
+      const progress = Storage.getProgress(b.id);
+      const totalCh = b.totalChapters || 0;
+      const pct = totalCh > 0 ? Math.round((progress.chapterIndex / totalCh) * 100) : 0;
+      return `
+        <div class="book-card" data-id="${b.id}">
+          <button class="book-delete" data-action="delete" data-id="${b.id}">×</button>
+          <div class="book-cover">📖</div>
+          <div class="book-name">${this._esc(b.title)}</div>
+          <div class="book-progress">${pct}% · ${totalCh}章</div>
+        </div>`;
+    }).join('');
+
+    // Click to open book
+    listEl.querySelectorAll('.book-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.dataset.action === 'delete') return;
+        App.openBook(card.dataset.id);
+      });
+
+      // Long press for delete
+      let pressTimer;
+      card.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(() => {
+          listEl.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
+          card.classList.add('long-press');
+        }, 600);
+      });
+      card.addEventListener('touchend', () => clearTimeout(pressTimer));
+      card.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    });
+
+    // Delete button clicks
+    listEl.querySelectorAll('.book-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._confirmDelete(btn.dataset.id);
+      });
+    });
+
+    // Hide delete buttons on tap outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.book-card')) {
+        listEl.querySelectorAll('.book-card.long-press').forEach(c => c.classList.remove('long-press'));
+      }
+    });
+  },
+
+  _confirmDelete(bookId) {
+    const dialog = document.getElementById('delete-dialog');
+    dialog.style.display = 'flex';
+    document.getElementById('delete-cancel').onclick = () => { dialog.style.display = 'none'; };
+    document.getElementById('delete-confirm').onclick = () => {
+      const books = Storage.getBooks().filter(b => b.id !== bookId);
+      Storage.saveBooks(books);
+      Storage.removeBook(bookId);
+      dialog.style.display = 'none';
+      this.render();
+      Toast.show('已删除');
+    };
+  },
+
+  _esc(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+};
 </script>
 
 </body>
