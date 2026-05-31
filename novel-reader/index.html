@@ -532,11 +532,14 @@ const Reader = {
         document.getElementById('reader-chapter').textContent =
           '第' + (cur + 1) + '章 ' + (this.meta.chapterTitles[cur] || this.chapters[cur].title);
       }
-      this._save();
+      clearTimeout(this._saveTimer);
+      this._saveTimer = setTimeout(() => this._save(), 300);
     };
   },
 
   jumpToChapter(idx, scrollPos = 0) {
+    if (!this._dividers || !this._dividers.length) return;
+    if (idx >= this._dividers.length) idx = 0;
     this.chapterIndex = idx;
     const div = this._dividers[idx];
     if (div) {
