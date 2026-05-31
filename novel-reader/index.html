@@ -184,3 +184,91 @@ button:focus-visible, .toggle input:focus-visible + .toggle-slider, .toc-item:fo
 .font-xxl { --font-size: 22px; }
 </style>
 </head>
+
+<body>
+
+<!-- Bookshelf -->
+<div id="shelf-page" class="page active">
+  <div class="shelf-header"><h1>我的书架</h1></div>
+  <div id="book-grid" class="book-grid"></div>
+  <div id="empty-state" class="empty-state">
+    <div class="empty-icon">📚</div>
+    <p class="empty-text">书架空空如也</p>
+    <p class="empty-hint">点击下方按钮导入你的第一本小说</p>
+  </div>
+  <div class="shelf-footer">
+    <button id="btn-import" class="btn-import">导入小说</button>
+    <input type="file" id="file-input" accept=".txt,text/plain" style="display:none">
+  </div>
+</div>
+
+<!-- Reader -->
+<div id="reader-page" class="page">
+  <div class="reader-header">
+    <span id="reader-back" class="header-back">←</span>
+    <span id="reader-chapter" class="header-title"></span>
+  </div>
+  <div id="reader-content" class="reader-content"></div>
+  <div id="reader-menu" class="reader-menu">
+    <div class="menu-row">
+      <button id="menu-toc" class="menu-btn">📑 目录</button>
+      <button id="menu-theme" class="menu-btn">🌙 夜间</button>
+      <button id="menu-eye" class="menu-btn">🛡️ 护眼</button>
+      <button id="menu-settings" class="menu-btn">⚙️ 设置</button>
+    </div>
+    <div class="menu-progress"><div id="menu-progress-fill" class="menu-progress-fill"></div></div>
+    <div id="menu-progress-text" class="menu-progress-text"></div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div id="toc-page" class="page">
+  <div class="toc-header">
+    <span id="toc-back" class="header-back">←</span>
+    <span class="toc-title">目录</span>
+    <span class="toc-spacer"></span>
+  </div>
+  <div id="toc-list" class="toc-list"></div>
+</div>
+
+<!-- Settings overlay -->
+<div id="settings-overlay" class="settings-overlay">
+  <div class="settings-backdrop"></div>
+  <div class="settings-panel">
+    <div class="settings-title">阅读设置</div>
+    <div class="settings-row">
+      <span>🌙 夜间模式</span>
+      <label class="toggle"><input type="checkbox" id="setting-night"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <span>🛡️ 护眼模式</span>
+      <label class="toggle"><input type="checkbox" id="setting-eye"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <span>🔤 字号</span>
+      <div class="font-row">
+        <button id="font-down" class="font-btn">A-</button>
+        <span id="font-label" class="font-label">标准</span>
+        <button id="font-up" class="font-btn">A+</button>
+      </div>
+    </div>
+    <button id="settings-done" class="btn-done">完成</button>
+  </div>
+</div>
+
+<!-- Delete dialog -->
+<div id="delete-dialog" class="dialog-overlay">
+  <div class="dialog-box">
+    <p class="dialog-text">确定要删除这本书吗？<br><small>此操作不可恢复</small></p>
+    <div class="dialog-actions">
+      <button id="delete-cancel" class="btn-cancel">取消</button>
+      <button id="delete-confirm" class="btn-danger">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+</body>
+</html>
