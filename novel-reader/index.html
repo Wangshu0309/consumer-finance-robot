@@ -223,6 +223,98 @@ html, body {
 /* === Header back button === */
 .header-back { font-size: 15px; color: var(--accent); cursor: pointer; padding: 4px 8px; }
 .header-time { font-size: 12px; color: var(--text-secondary); }
+
+/* === Reader === */
+.reader-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 48px 16px 8px; background: var(--bg-page);
+  opacity: 0; transition: opacity 0.3s; z-index: 10;
+}
+.reader-header.visible { opacity: 1; }
+.header-title { font-size: 13px; color: var(--text-secondary); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.reader-container {
+  flex: 1; overflow: hidden; position: relative;
+  perspective: 1200px;
+}
+
+.reader-content {
+  position: absolute; inset: 0; padding: 16px 20px;
+  overflow-y: auto; line-height: 1.9;
+  -webkit-overflow-scrolling: touch;
+  backface-visibility: hidden;
+  transform-origin: left center;
+  background: var(--bg-page);
+}
+
+/* Scroll mode */
+.reader-content.scroll-mode {
+  position: relative; overflow-y: auto; height: 100%;
+}
+
+.reader-next {
+  transform: rotateY(180deg);
+}
+
+/* Page curl container */
+.page-curl-container {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+.page-curl-container.flipped {
+  transform: rotateY(-180deg);
+}
+
+/* Page curl shadow effect on the flipping page */
+.page-curl-shadow {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to right, rgba(0,0,0,0.15), transparent 30%);
+  opacity: 0; transition: opacity 0.5s;
+}
+.page-curl-container.flipped .page-curl-shadow { opacity: 1; }
+
+.reader-footer {
+  padding: 8px 20px 20px; text-align: center;
+  background: var(--bg-page); opacity: 0; transition: opacity 0.3s;
+}
+.reader-footer.visible { opacity: 1; }
+.progress-bar {
+  height: 3px; background: var(--border-color);
+  border-radius: 2px; margin-bottom: 4px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 2px; transition: width 0.3s;
+  width: 0%;
+}
+.progress-text { font-size: 11px; color: var(--text-secondary); }
+
+/* Page text styles based on font size */
+.reader-content.font-sm { font-size: var(--font-size-sm); }
+.reader-content.font-md { font-size: var(--font-size-md); }
+.reader-content.font-lg { font-size: var(--font-size-lg); }
+.reader-content.font-xl { font-size: var(--font-size-xl); }
+.reader-content.font-xxl { font-size: var(--font-size-xxl); }
+
+.reader-content p { margin-bottom: 0.8em; text-indent: 2em; }
+
+/* === Reader Bottom Menu === */
+.reader-menu {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--bg-card); padding: 12px 16px 20px;
+  transform: translateY(100%); transition: transform 0.3s ease;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.1); z-index: 20;
+}
+.reader-menu.show { transform: translateY(0); }
+.menu-row { display: flex; justify-content: space-around; margin-bottom: 10px; }
+.menu-btn {
+  background: none; border: none; color: var(--text-primary);
+  font-size: 13px; cursor: pointer; padding: 8px 12px;
+  border-radius: 8px; transition: background 0.15s;
+}
+.menu-btn:active { background: var(--accent-light); }
+.menu-progress .progress-fill { height: 2px; }
 </style>
 </head>
 <body>
