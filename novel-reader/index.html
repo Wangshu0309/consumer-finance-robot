@@ -521,17 +521,20 @@ const Reader = {
     el.innerHTML = html;
     this._dividers = el.querySelectorAll('.chapter-divider');
 
-    // Cache positions once to avoid offsetTop reflows on every scroll
-    const contentTop = el.getBoundingClientRect().top;
-    const tops = [];
-    for (let i = 0; i < this._dividers.length; i++) {
-      tops.push(this._dividers[i].getBoundingClientRect().top - contentTop);
-    }
-    this._divTops = tops;
+    // Defer position caching to avoid blocking initial render
+    requestAnimationFrame(() => {
+      const contentTop = el.getBoundingClientRect().top;
+      const tops = [];
+      for (let i = 0; i < this._dividers.length; i++) {
+        tops.push(this._dividers[i].getBoundingClientRect().top - contentTop);
+      }
+      this._divTops = tops;
+    });
 
     el.onscroll = () => {
       const st = el.scrollTop;
-      // Binary search for current chapter
+      if (!this._divTops) return;
+      const tops = this._divTops;
       let lo = 0, hi = tops.length - 1, cur = 0;
       while (lo <= hi) {
         const m = (lo + hi) >> 1;
@@ -549,13 +552,40 @@ const Reader = {
   },
 
   jumpToChapter(idx, scrollPos = 0) {
-    if (!this._divTops || !this._divTops.length) return;
-    if (idx >= this._divTops.length) idx = 0;
+    if (idx >= this.chapters.length) idx = 0;
     this.chapterIndex = idx;
-    document.getElementById('reader-content').scrollTop = this._divTops[idx] + scrollPos - 60;
     document.getElementById('reader-chapter').textContent =
       '第' + (idx + 1) + '章 ' + (this.meta.chapterTitles[idx] || this.chapters[idx].title);
-    this._save();
+
+    // ScrollPos is absolute. If we have cached positions, use them to verify;
+    // otherwise wait for rAF to cache positions then scroll.
+    const el = document.getElementById('reader-content');
+    const doScroll = () => {
+      if (scrollPos > 0) {
+        el.scrollTop = scrollPos;
+      } else if (this._divTops && this._divTops[idx] != null) {
+        el.scrollTop = this._divTops[idx] - 60;
+      }
+      this._save();
+    };
+
+    if (this._divTops) {
+      doScroll();
+    } else {
+      // Positions not cached yet, wait one frame
+      requestAnimationFrame(() => {
+        if (!this._divTops) {
+          const contentTop = el.getBoundingClientRect().top;
+          const tops = [];
+          const divs = el.querySelectorAll('.chapter-divider');
+          for (let i = 0; i < divs.length; i++) {
+            tops.push(divs[i].getBoundingClientRect().top - contentTop);
+          }
+          this._divTops = tops;
+        }
+        doScroll();
+      });
+    }
   },
 
   formatBody(text) {
