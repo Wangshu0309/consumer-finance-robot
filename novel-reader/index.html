@@ -336,7 +336,7 @@ html, body {
   </div>
   <div class="shelf-footer">
     <button id="import-btn" class="btn-primary">导入小说</button>
-    <input type="file" id="file-input" accept=".txt" style="display:none">
+    <input type="file" id="file-input" accept=".txt,text/plain" style="display:none">
   </div>
 </div>
 
@@ -585,14 +585,32 @@ const Bookshelf = {
 
     let text;
     try {
-      // Try UTF-8 first
-      text = await file.text();
-      // Quick check: if garbled, try GBK
-      if (this._looksGarbled(text)) {
-        const buf = await file.arrayBuffer();
-        text = new TextDecoder('gbk').decode(buf);
+      // Read file as array buffer first for encoding detection
+      const buf = await file.arrayBuffer();
+      const view = new Uint8Array(buf);
+
+      // Detect encoding: check for UTF-8 BOM or try UTF-8 decode
+      let isUTF8 = true;
+      if (view[0] === 0xEF && view[1] === 0xBB && view[2] === 0xBF) {
+        // UTF-8 BOM confirmed
+        text = new TextDecoder('utf-8').decode(view.slice(3));
+      } else {
+        // Try UTF-8 with replacement character detection
+        text = new TextDecoder('utf-8').decode(view);
+        if (this._looksGarbled(text)) {
+          isUTF8 = false;
+        }
       }
-    } catch {
+
+      if (!isUTF8) {
+        // Try Chinese encodings
+        try { text = new TextDecoder('gb18030').decode(view); }
+        catch { try { text = new TextDecoder('gbk').decode(view); }
+        catch { try { text = new TextDecoder('gb2312').decode(view); }
+        catch { /* keep garbled UTF-8 text */ }}}
+      }
+    } catch (e) {
+      console.error('File read error:', e);
       Toast.show('文件读取失败，请检查文件格式');
       return;
     }
@@ -646,9 +664,12 @@ const Bookshelf = {
   },
 
   _looksGarbled(text) {
-    const sample = text.slice(0, 500);
-    const garbledCount = (sample.match(/[�\x00-\x08\x0b\x0c\x0e-\x1f]/g) || []).length;
-    return garbledCount > sample.length * 0.1;
+    // Check for excessive replacement characters indicating wrong encoding
+    const sample = text.slice(0, 1000);
+    const replacementCount = (sample.match(/�/g) || []).length;
+    // Check for unusual rate of non-printable characters
+    const controlCount = (sample.match(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g) || []).length;
+    return replacementCount > 3 || controlCount > sample.length * 0.05;
   },
 
   render() {
