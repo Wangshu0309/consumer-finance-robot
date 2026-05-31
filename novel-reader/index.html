@@ -521,11 +521,22 @@ const Reader = {
     el.innerHTML = html;
     this._dividers = el.querySelectorAll('.chapter-divider');
 
+    // Cache positions once to avoid offsetTop reflows on every scroll
+    const contentTop = el.getBoundingClientRect().top;
+    const tops = [];
+    for (let i = 0; i < this._dividers.length; i++) {
+      tops.push(this._dividers[i].getBoundingClientRect().top - contentTop);
+    }
+    this._divTops = tops;
+
     el.onscroll = () => {
       const st = el.scrollTop;
-      let cur = 0;
-      for (let i = this._dividers.length - 1; i >= 0; i--) {
-        if (this._dividers[i].offsetTop <= st + 80) { cur = i; break; }
+      // Binary search for current chapter
+      let lo = 0, hi = tops.length - 1, cur = 0;
+      while (lo <= hi) {
+        const m = (lo + hi) >> 1;
+        if (tops[m] <= st + 80) { cur = m; lo = m + 1; }
+        else { hi = m - 1; }
       }
       if (cur !== this.chapterIndex) {
         this.chapterIndex = cur;
@@ -538,13 +549,10 @@ const Reader = {
   },
 
   jumpToChapter(idx, scrollPos = 0) {
-    if (!this._dividers || !this._dividers.length) return;
-    if (idx >= this._dividers.length) idx = 0;
+    if (!this._divTops || !this._divTops.length) return;
+    if (idx >= this._divTops.length) idx = 0;
     this.chapterIndex = idx;
-    const div = this._dividers[idx];
-    if (div) {
-      document.getElementById('reader-content').scrollTop = div.offsetTop + scrollPos - 60;
-    }
+    document.getElementById('reader-content').scrollTop = this._divTops[idx] + scrollPos - 60;
     document.getElementById('reader-chapter').textContent =
       '第' + (idx + 1) + '章 ' + (this.meta.chapterTitles[idx] || this.chapters[idx].title);
     this._save();
