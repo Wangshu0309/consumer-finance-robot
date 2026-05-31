@@ -480,6 +480,117 @@ const Shelf = {
     };
   }
 };
+
+// ===== READER =====
+const Reader = {
+  bookId: null,
+  chapterIndex: 0,
+  chapters: [],
+  meta: null,
+  menuVisible: false,
+  _menuTimer: null,
+
+  init(bookId) {
+    this.bookId = bookId;
+    this.meta = S.meta(bookId);
+    const prog = S.progress(bookId);
+    this.chapterIndex = prog.chapterIndex;
+    const text = S.text(bookId);
+    this.chapters = Parser.parse(text);
+    this.applySettings(S.settings());
+    this.renderAll();
+    this.jumpToChapter(this.chapterIndex, prog.scrollPos);
+  },
+
+  applySettings(s) {
+    document.body.classList.toggle('night', s.theme === 'night');
+    document.body.classList.toggle('eye-care', s.eyeCare);
+    document.getElementById('reader-content').className = 'reader-content font-' + (s.fontSize || 'lg');
+    document.getElementById('menu-theme').textContent = s.theme === 'night' ? '☀️ 白天' : '🌙 夜间';
+    document.getElementById('menu-eye').textContent = s.eyeCare ? '🛡️ 护眼 ✓' : '🛡️ 护眼';
+  },
+
+  renderAll() {
+    const el = document.getElementById('reader-content');
+    let html = '';
+    for (let i = 0; i < this.chapters.length; i++) {
+      const title = this.meta.chapterTitles[i] || this.chapters[i].title;
+      html += `<div class="chapter-divider" data-chapter="${i}">${esc(title)}</div>`;
+      html += this.formatBody(this.chapters[i].body || '');
+    }
+    el.innerHTML = html;
+    this._dividers = el.querySelectorAll('.chapter-divider');
+
+    el.onscroll = () => {
+      const st = el.scrollTop;
+      let cur = 0;
+      for (let i = this._dividers.length - 1; i >= 0; i--) {
+        if (this._dividers[i].offsetTop <= st + 80) { cur = i; break; }
+      }
+      if (cur !== this.chapterIndex) {
+        this.chapterIndex = cur;
+        document.getElementById('reader-chapter').textContent =
+          '第' + (cur + 1) + '章 ' + (this.meta.chapterTitles[cur] || this.chapters[cur].title);
+      }
+      this._save();
+    };
+  },
+
+  jumpToChapter(idx, scrollPos = 0) {
+    this.chapterIndex = idx;
+    const div = this._dividers[idx];
+    if (div) {
+      document.getElementById('reader-content').scrollTop = div.offsetTop + scrollPos - 60;
+    }
+    document.getElementById('reader-chapter').textContent =
+      '第' + (idx + 1) + '章 ' + (this.meta.chapterTitles[idx] || this.chapters[idx].title);
+    this._save();
+  },
+
+  formatBody(text) {
+    if (!text) return '';
+    return text.split(/\n+/).filter(p => p.trim()).map(p => `<p>${esc(p.trim())}</p>`).join('');
+  },
+
+  toggleMenu() {
+    this.menuVisible = !this.menuVisible;
+    document.getElementById('reader-menu').classList.toggle('show', this.menuVisible);
+    if (this.menuVisible) {
+      this.updateProgress();
+      clearTimeout(this._menuTimer);
+      this._menuTimer = setTimeout(() => this.hideMenu(), 3000);
+    }
+  },
+
+  hideMenu() {
+    this.menuVisible = false;
+    document.getElementById('reader-menu').classList.remove('show');
+  },
+
+  updateProgress() {
+    const el = document.getElementById('reader-content');
+    const total = el.scrollHeight - el.clientHeight;
+    const pct = total > 0 ? Math.round((el.scrollTop / total) * 100) : 0;
+    document.getElementById('menu-progress-fill').style.width = pct + '%';
+    const bookPct = Math.round(((this.chapterIndex + pct / 100) / (this.chapters.length || 1)) * 100);
+    document.getElementById('menu-progress-text').textContent =
+      (this.meta.chapterTitles[this.chapterIndex] || '') + ' · ' + bookPct + '%';
+  },
+
+  scrollOneScreen(dir) {
+    const el = document.getElementById('reader-content');
+    const h = el.clientHeight * 0.8;
+    el.scrollBy({ top: dir > 0 ? h : -h, behavior: 'smooth' });
+  },
+
+  _save() {
+    if (!this.bookId) return;
+    S.saveProgress(this.bookId, {
+      chapterIndex: this.chapterIndex,
+      scrollPos: document.getElementById('reader-content').scrollTop,
+    });
+  }
+};
 </script>
 
 </body>
