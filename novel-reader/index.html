@@ -487,6 +487,76 @@ const Toast = {
     this.timer = setTimeout(() => el.classList.remove('show'), duration);
   }
 };
+
+// ===== CHAPTER PARSER =====
+const ChapterParser = {
+  // Chinese numeral mapping for parsing
+  _cnNums: '零一二三四五六七八九十百千',
+
+  parse(text) {
+    if (!text || text.trim().length === 0) return [{ title: '正文', start: 0 }];
+
+    const lines = text.split(/\r?\n/);
+    const patterns = [
+      /^第[0-9零一二三四五六七八九十百千]+[章节卷回集].*/,
+      /^Chapter\s+\d+/i,
+      /^Ch\.\s*\d+/i,
+      /^(序章|楔子|前言|引子|序幕|尾声|后记|终章|结局|番外|外传|附篇).*/,
+      /^[一二三四五六七八九十]+[、，.\s].*/,
+    ];
+
+    const matches = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.length === 0) continue;
+      for (const pat of patterns) {
+        if (pat.test(line)) {
+          matches.push({ title: line.slice(0, 40), start: i });
+          break;
+        }
+      }
+    }
+
+    // Merge: keep first match for consecutive matches on nearby lines
+    const filtered = [];
+    for (let i = 0; i < matches.length; i++) {
+      if (i === 0 || matches[i].start - matches[i - 1].start > 5) {
+        filtered.push(matches[i]);
+      }
+    }
+
+    // Build chapters: each chapter spans from its start to the next chapter's start
+    const chapters = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const title = filtered[i].title;
+      const startIdx = filtered[i].start;
+      const endIdx = i + 1 < filtered.length ? filtered[i + 1].start : lines.length;
+      const contentLines = lines.slice(startIdx, endIdx);
+      const bodyLines = contentLines.slice(1); // skip the title line itself
+      const body = bodyLines.join('\n').trim();
+
+      if (body.length >= 50) { // filter empty chapters
+        chapters.push({ title, body });
+      }
+    }
+
+    // If no chapters found, create one chapter with all content
+    if (chapters.length === 0) {
+      const allText = lines.join('\n').trim();
+      if (allText.length >= 50) {
+        chapters.push({ title: '正文', body: allText });
+      }
+    }
+
+    // If still empty (very short text), still create at least one chapter
+    if (chapters.length === 0 && text.trim().length > 0) {
+      chapters.push({ title: '正文', body: text.trim() });
+    }
+
+    return chapters;
+  }
+};
 </script>
 
 </body>
