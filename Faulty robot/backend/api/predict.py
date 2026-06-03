@@ -93,7 +93,7 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
     validation = cross_validation(annual, target_year)
     dupont = dupont_analysis(annual, target_year)
     peers = peer_comparison(annual)
-    valuation = valuation_analysis(annual, returns.get("current_price", 0) if returns else 0)
+    valuation = valuation_analysis(annual, returns.get("current_price", 0) if returns else 0, code)
 
     # Build trend data for charting (last 8 years)
     trend = []

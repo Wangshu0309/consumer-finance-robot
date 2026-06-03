@@ -4,8 +4,12 @@ from typing import Dict, List
 import numpy as np
 
 
-def valuation_analysis(annual: Dict[int, Dict[str, float]], current_price: float) -> Dict:
+def valuation_analysis(annual: Dict[int, Dict[str, float]], current_price: float,
+                       code: str = "") -> Dict:
     """Calculate PE, PB, PS and their historical percentile positions."""
+    if current_price <= 0:
+        return {}
+
     latest_yr = sorted(annual.keys())[-1]
     cur = annual.get(latest_yr, {})
 
@@ -14,6 +18,18 @@ def valuation_analysis(annual: Dict[int, Dict[str, float]], current_price: float
     rev = cur.get("revenue", 0) or 0
     np_val = cur.get("net_profit", 0) or 0
     equity = cur.get("equity", 0) or 0
+
+    # If EPS/BPS missing from cache, re-fetch from Sina abstract
+    if eps <= 0 or bps <= 0:
+        try:
+            from services.data_fetcher import _fetch_financial_abstract
+            raw = _fetch_financial_abstract(code)
+            if raw and latest_yr in raw:
+                r = raw[latest_yr]
+                if eps <= 0: eps = r.get("eps", 0) or 0
+                if bps <= 0: bps = r.get("bps", 0) or 0
+        except Exception:
+            pass
 
     results = {}
     price = current_price
