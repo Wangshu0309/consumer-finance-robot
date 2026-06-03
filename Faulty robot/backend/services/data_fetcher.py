@@ -350,31 +350,36 @@ def fetch_financial_data(code: str) -> Dict[int, Dict[str, float]]:
 
 
 def fetch_stock_price(code: str) -> list:
-    """Fetch monthly stock price history (past 5 years), forward-adjusted."""
+    """Fetch monthly stock price history (past 3 years), forward-adjusted."""
     import datetime
     code = normalize_code(code)
-    try:
-        end = datetime.date.today().strftime('%Y%m%d')
-        start = (datetime.date.today() - datetime.timedelta(days=5*365)).strftime('%Y%m%d')
-        df = ak.stock_zh_a_hist(symbol=code, period='monthly', start_date=start, end_date=end, adjust='qfq')
-        if df is None or df.empty:
-            return []
-        result = []
-        for _, row in df.iterrows():
-            try:
-                result.append({
-                    "date": str(row["日期"])[:10],
-                    "open": round(float(row["开盘"]), 2),
-                    "close": round(float(row["收盘"]), 2),
-                    "high": round(float(row["最高"]), 2),
-                    "low": round(float(row["最低"]), 2),
-                })
-            except (ValueError, TypeError, KeyError):
-                continue
-        return result
-    except Exception as e:
-        logger.warning("Price fetch failed for %s: %s", code, e)
-        return []
+    # Try multiple AkShare price sources
+    methods = [
+        lambda: ak.stock_zh_a_hist(symbol=code, period='monthly', start_date='20220101', end_date='20260601', adjust='qfq'),
+        lambda: ak.stock_zh_a_hist(symbol=code, period='monthly', adjust='qfq'),
+    ]
+    for fn in methods:
+        try:
+            df = fn()
+            if df is not None and not df.empty:
+                result = []
+                for _, row in df.iterrows():
+                    try:
+                        result.append({
+                            "date": str(row["日期"])[:10],
+                            "open": round(float(row["开盘"]), 2),
+                            "close": round(float(row["收盘"]), 2),
+                            "high": round(float(row["最高"]), 2),
+                            "low": round(float(row["最低"]), 2),
+                        })
+                    except (ValueError, TypeError, KeyError):
+                        continue
+                if result:
+                    return result
+        except Exception as e:
+            logger.warning("Price source failed for %s: %s", code, str(e)[:80])
+            continue
+    return []
 
 
 def calc_returns_stats(monthly: list) -> dict:
