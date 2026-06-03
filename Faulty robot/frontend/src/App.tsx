@@ -17,6 +17,7 @@ import ReturnsTable from './components/ReturnsTable';
 import ValidationPanel from './components/ValidationPanel';
 import DuPontPanel from './components/DuPontPanel';
 import PeerComparisonPanel from './components/PeerComparisonPanel';
+import ValuationPanel from './components/ValuationPanel';
 
 function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle?: string }) {
   return (
@@ -168,8 +169,16 @@ export default function App() {
                 <PriceChart data={state.data.price_data} />
               </div>
               {state.data.returns && state.data.returns.current_price && (
-                <div className="mt-4 card-gold p-5">
-                  <ReturnsTable data={state.data.returns} />
+                <div className="mt-4 space-y-4">
+                  <div className="card-gold p-5">
+                    <ReturnsTable data={state.data.returns} />
+                  </div>
+                  {state.data.valuation && (state.data.valuation.pe || state.data.valuation.pb) && (
+                    <div className="card-gold p-5">
+                      <p className="text-xs text-gold font-mono mb-3">估值分析 · PE / PB / PS</p>
+                      <ValuationPanel data={state.data.valuation} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -67,6 +67,27 @@ export interface PeerItem {
   rank: string;
 }
 
+export interface ValMetric {
+  current: number;
+  eps?: number;
+  bps?: number;
+  sps?: number;
+}
+
+export interface VEBandPoint {
+  year: number;
+  pe: number;
+  eps: number;
+}
+
+export interface ValuationData {
+  pe?: ValMetric;
+  pb?: ValMetric;
+  ps?: ValMetric;
+  pe_band: VEBandPoint[];
+  price: number;
+}
+
 export interface PeerData {
   sector: string;
   peers: PeerItem[];
@@ -89,6 +110,7 @@ export interface PredictResponse {
   validation: ValidationSignal[];
   dupont: DuPontData;
   peers: PeerData;
+  valuation: ValuationData;
 }
 
 export interface ApiResponse {

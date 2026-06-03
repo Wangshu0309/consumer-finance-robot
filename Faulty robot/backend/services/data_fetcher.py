@@ -112,6 +112,9 @@ _ABSTRACT_INDICATOR_MAP = {
     "资产负债率": "debt_ratio",
     "股东权益合计(净资产)": "equity",
     "资产总计": "total_assets",
+    "基本每股收益": "eps",
+    "每股净资产": "bps",
+    "净利润同比增长": "net_profit_growth_yoy",
 }
 
 

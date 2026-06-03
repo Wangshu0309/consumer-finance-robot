@@ -10,7 +10,7 @@ from services.feature_engine import extract_features
 from services.predictor import get_prediction
 from services.rule_engine import check_rules, check_data_sufficient
 from services.analysis_writer import generate_analysis, generate_summary
-from services.deep_analysis import cross_validation, dupont_analysis, peer_comparison
+from services.deep_analysis import cross_validation, dupont_analysis, peer_comparison, valuation_analysis
 
 router = APIRouter()
 
@@ -93,6 +93,7 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
     validation = cross_validation(annual, target_year)
     dupont = dupont_analysis(annual, target_year)
     peers = peer_comparison(annual)
+    valuation = valuation_analysis(annual, returns.get("current_price", 0) if returns else 0)
 
     # Build trend data for charting (last 8 years)
     trend = []
@@ -167,6 +168,7 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
             "validation": validation,
             "dupont": dupont,
             "peers": peers,
+            "valuation": valuation,
             "features": features_display,
         },
     }

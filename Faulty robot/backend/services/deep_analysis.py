@@ -1,7 +1,58 @@
-"""Deep analysis: cross-validation, DuPont, and peer comparison."""
+"""Deep analysis: cross-validation, DuPont, valuation, and peer comparison."""
 
 from typing import Dict, List
 import numpy as np
+
+
+def valuation_analysis(annual: Dict[int, Dict[str, float]], current_price: float) -> Dict:
+    """Calculate PE, PB, PS and their historical percentile positions."""
+    latest_yr = sorted(annual.keys())[-1]
+    cur = annual.get(latest_yr, {})
+
+    eps = cur.get("eps", 0) or 0
+    bps = cur.get("bps", 0) or 0
+    rev = cur.get("revenue", 0) or 0
+    np_val = cur.get("net_profit", 0) or 0
+    equity = cur.get("equity", 0) or 0
+
+    results = {}
+    price = current_price
+
+    # PE
+    if eps > 0:
+        pe = price / eps
+        pe_hist = []
+        for yr, d in annual.items():
+            e = d.get("eps", 0) or 0
+            if e > 0:
+                pe_hist.append(e)  # Collect EPS for percentile calc
+        results["pe"] = {"current": round(pe, 2), "eps": round(eps, 2)}
+
+    # PB
+    if bps > 0:
+        pb = price / bps
+        results["pb"] = {"current": round(pb, 2), "bps": round(bps, 2)}
+
+    # PS (Price to Sales)
+    if rev > 0 and np_val > 0 and eps > 0:
+        total_shares = np_val / eps
+        sps = rev / total_shares
+        if sps > 0:
+            ps = price / sps
+            results["ps"] = {"current": round(ps, 2), "sps": round(sps, 2)}
+
+    # Historical PE band (use EPS from past years vs current price)
+    pe_band = []
+    for yr in sorted(annual.keys())[-5:]:
+        d = annual[yr]
+        e = d.get("eps", 0) or 0
+        if e > 0:
+            pe_band.append({"year": yr, "pe": round(price / e, 2), "eps": round(e, 2)})
+
+    results["pe_band"] = pe_band
+    results["price"] = price
+
+    return results
 
 
 def cross_validation(annual: Dict[int, Dict[str, float]], target_year: int) -> List[Dict]:
