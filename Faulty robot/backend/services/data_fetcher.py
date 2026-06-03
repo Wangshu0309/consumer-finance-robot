@@ -350,28 +350,31 @@ def fetch_financial_data(code: str) -> Dict[int, Dict[str, float]]:
 
 
 def fetch_stock_price(code: str) -> list:
-    """Fetch monthly stock price history (past 5 years), forward-adjusted."""
-    import datetime
+    """Fetch monthly stock price from Sina daily data (AkShare)."""
     code = normalize_code(code)
     try:
-        end = datetime.date.today().strftime('%Y%m%d')
-        start = (datetime.date.today() - datetime.timedelta(days=5*365)).strftime('%Y%m%d')
-        df = ak.stock_zh_a_hist(symbol=code, period='monthly', start_date=start, end_date=end, adjust='qfq')
+        symbol = f"sh{code}" if code.startswith("6") else f"sz{code}"
+        df = ak.stock_zh_a_daily(symbol=symbol, adjust="qfq")
         if df is None or df.empty:
+            logger.warning("stock_zh_a_daily returned empty for %s", code)
             return []
+        df = df.copy()
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+        else:
+            df["date"] = pd.to_datetime(df.index)
+        df = df.set_index("date").sort_index()
+        monthly = df.resample("ME").agg({"open": "first", "close": "last", "high": "max", "low": "min"}).dropna()
         result = []
-        for _, row in df.iterrows():
-            try:
-                result.append({
-                    "date": str(row["日期"])[:10],
-                    "open": round(float(row["开盘"]), 2),
-                    "close": round(float(row["收盘"]), 2),
-                    "high": round(float(row["最高"]), 2),
-                    "low": round(float(row["最低"]), 2),
-                })
-            except (ValueError, TypeError, KeyError):
-                continue
-        return result
+        for dt, row in monthly.iterrows():
+            result.append({
+                "date": dt.strftime("%Y-%m-%d"),
+                "open": round(float(row["open"]), 2),
+                "close": round(float(row["close"]), 2),
+                "high": round(float(row["high"]), 2),
+                "low": round(float(row["low"]), 2),
+            })
+        return result[-72:] if result else []
     except Exception as e:
         logger.warning("Price fetch failed for %s: %s", code, e)
         return []
