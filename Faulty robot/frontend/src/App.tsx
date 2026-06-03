@@ -14,6 +14,9 @@ import CashFlowChart from './components/CashFlowChart';
 import TurnoverChart from './components/TurnoverChart';
 import PriceChart from './components/PriceChart';
 import ReturnsTable from './components/ReturnsTable';
+import ValidationPanel from './components/ValidationPanel';
+import DuPontPanel from './components/DuPontPanel';
+import PeerComparisonPanel from './components/PeerComparisonPanel';
 
 function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle?: string }) {
   return (
@@ -129,9 +132,36 @@ export default function App() {
             </div>
           </div>
 
-          {/* ⑤ 行情表现 */}
+          {/* ⑤ 深度分析 */}
+          <div className="fade-in fade-in-delay-4 space-y-5">
+            {/* 交叉验证 */}
+            {state.data.validation && state.data.validation.length > 0 && (
+              <div>
+                <SectionHeader icon="🔍" title="指标勾稽验证" subtitle="关键指标间的逻辑自洽性检查" />
+                <ValidationPanel signals={state.data.validation} />
+              </div>
+            )}
+
+            {/* 杜邦分析 */}
+            {state.data.dupont && state.data.dupont.current?.roe > 0 && (
+              <div className="card-gold p-5">
+                <p className="text-xs text-gold font-mono mb-3">杜邦分析 · ROE 拆解</p>
+                <DuPontPanel data={state.data.dupont} />
+              </div>
+            )}
+
+            {/* 同业对比 */}
+            {state.data.peers && state.data.peers.peers?.length > 0 && (
+              <div className="card-gold p-5">
+                <p className="text-xs text-gold font-mono mb-3">同业对比</p>
+                <PeerComparisonPanel data={state.data.peers} />
+              </div>
+            )}
+          </div>
+
+          {/* ⑥ 行情表现 */}
           {state.data.price_data && state.data.price_data.length >= 2 && (
-            <div className="fade-in fade-in-delay-4">
+            <div className="fade-in fade-in-delay-5">
               <SectionHeader icon="📈" title="行情表现" subtitle="股价趋势与收益统计" />
               <div className="card-gold p-5">
                 <p className="text-xs text-gold font-mono mb-3">股价走势（月线 · 前复权）</p>
@@ -145,8 +175,8 @@ export default function App() {
             </div>
           )}
 
-          {/* ⑥ AI 分析 */}
-          <div className="fade-in fade-in-delay-5">
+          {/* ⑦ AI 分析 */}
+          <div className="fade-in fade-in-delay-6">
             <SectionHeader icon="📝" title="AI 投资分析" subtitle="智能生成投资建议" />
             <AnalysisText text={state.data.analysis} />
           </div>

@@ -46,6 +46,32 @@ export interface ReturnsData {
   annual_returns: Array<{ year: number; return_pct: number }>;
 }
 
+export interface ValidationSignal {
+  signal: string;
+  level: string;
+  detail: string;
+}
+
+export interface DuPontData {
+  current: { roe: number; net_margin: number; asset_turnover: number; equity_multiplier: number };
+  previous: { roe: number; net_margin: number; asset_turnover: number; equity_multiplier: number };
+  contributions: { net_margin: number; asset_turnover: number; equity_multiplier: number };
+}
+
+export interface PeerItem {
+  metric: string;
+  value: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  rank: string;
+}
+
+export interface PeerData {
+  sector: string;
+  peers: PeerItem[];
+}
+
 export interface PredictResponse {
   stock_code: string;
   stock_name: string;
@@ -60,6 +86,9 @@ export interface PredictResponse {
   features: FeatureData | null;
   price_data: PricePoint[];
   returns: ReturnsData;
+  validation: ValidationSignal[];
+  dupont: DuPontData;
+  peers: PeerData;
 }
 
 export interface ApiResponse {

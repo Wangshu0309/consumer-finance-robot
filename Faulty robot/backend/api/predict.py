@@ -10,6 +10,7 @@ from services.feature_engine import extract_features
 from services.predictor import get_prediction
 from services.rule_engine import check_rules, check_data_sufficient
 from services.analysis_writer import generate_analysis, generate_summary
+from services.deep_analysis import cross_validation, dupont_analysis, peer_comparison
 
 router = APIRouter()
 
@@ -88,6 +89,11 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
     price_data = fetch_stock_price(code)
     returns = calc_returns_stats(price_data) if price_data else {}
 
+    # Deep analysis
+    validation = cross_validation(annual, target_year)
+    dupont = dupont_analysis(annual, target_year)
+    peers = peer_comparison(annual)
+
     # Build trend data for charting (last 8 years)
     trend = []
     for yr in sorted(annual.keys())[-8:]:
@@ -158,6 +164,9 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
             "trend": trend,
             "price_data": price_data[-60:],
             "returns": returns,
+            "validation": validation,
+            "dupont": dupont,
+            "peers": peers,
             "features": features_display,
         },
     }
