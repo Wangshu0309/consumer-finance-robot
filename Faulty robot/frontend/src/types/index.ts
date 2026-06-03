@@ -27,6 +27,25 @@ export interface FeatureData {
   ar_turnover_days_change: number;
 }
 
+export interface PricePoint {
+  date: string;
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+}
+
+export interface ReturnsData {
+  current_price: number;
+  total_return_pct: number;
+  cagr_pct: number;
+  max_drawdown_pct: number;
+  annual_volatility_pct: number;
+  sharpe_ratio: number;
+  win_rate_pct: number;
+  annual_returns: Array<{ year: number; return_pct: number }>;
+}
+
 export interface PredictResponse {
   stock_code: string;
   stock_name: string;
@@ -39,6 +58,8 @@ export interface PredictResponse {
   summary: SummaryData;
   trend: TrendPoint[];
   features: FeatureData | null;
+  price_data: PricePoint[];
+  returns: ReturnsData;
 }
 
 export interface ApiResponse {

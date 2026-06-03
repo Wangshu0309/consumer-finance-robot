@@ -5,7 +5,7 @@ from typing import Dict, Any
 import numpy as np
 from fastapi import APIRouter, HTTPException
 
-from services.data_fetcher import fetch_financial_data, fetch_stock_name, normalize_code, DataFetchError, is_listed
+from services.data_fetcher import fetch_financial_data, fetch_stock_name, normalize_code, DataFetchError, is_listed, fetch_stock_price, calc_returns_stats
 from services.feature_engine import extract_features
 from services.predictor import get_prediction
 from services.rule_engine import check_rules, check_data_sufficient
@@ -84,6 +84,10 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
     analysis = generate_analysis(stock_name, prob, warnings, feats)
     summary = generate_summary(prob, warnings, feats)
 
+    # Stock price data
+    price_data = fetch_stock_price(code)
+    returns = calc_returns_stats(price_data) if price_data else {}
+
     # Build trend data for charting (last 8 years)
     trend = []
     for yr in sorted(annual.keys())[-8:]:
@@ -152,6 +156,8 @@ def predict(body: Dict[str, Any]) -> Dict[str, Any]:
             "analysis": analysis,
             "summary": summary,
             "trend": trend,
+            "price_data": price_data[-60:],
+            "returns": returns,
             "features": features_display,
         },
     }

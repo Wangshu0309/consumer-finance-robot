@@ -349,6 +349,93 @@ def fetch_financial_data(code: str) -> Dict[int, Dict[str, float]]:
     return annual
 
 
+def fetch_stock_price(code: str) -> list:
+    """Fetch monthly stock price history (past 5 years), forward-adjusted."""
+    import datetime
+    code = normalize_code(code)
+    try:
+        end = datetime.date.today().strftime('%Y%m%d')
+        start = (datetime.date.today() - datetime.timedelta(days=5*365)).strftime('%Y%m%d')
+        df = ak.stock_zh_a_hist(symbol=code, period='monthly', start_date=start, end_date=end, adjust='qfq')
+        if df is None or df.empty:
+            return []
+        result = []
+        for _, row in df.iterrows():
+            try:
+                result.append({
+                    "date": str(row["日期"])[:10],
+                    "open": round(float(row["开盘"]), 2),
+                    "close": round(float(row["收盘"]), 2),
+                    "high": round(float(row["最高"]), 2),
+                    "low": round(float(row["最低"]), 2),
+                })
+            except (ValueError, TypeError, KeyError):
+                continue
+        return result
+    except Exception as e:
+        logger.warning("Price fetch failed for %s: %s", code, e)
+        return []
+
+
+def calc_returns_stats(monthly: list) -> dict:
+    """Calculate performance stats from monthly close prices."""
+    import statistics
+    if len(monthly) < 12:
+        return {}
+    closes = [m["close"] for m in monthly]
+    first_price, last_price = closes[0], closes[-1]
+
+    # Annual returns
+    annual_returns = {}
+    for m in monthly:
+        yr = int(m["date"][:4])
+        if yr not in annual_returns:
+            annual_returns[yr] = {"start": m["close"], "end": m["close"]}
+        annual_returns[yr]["end"] = m["close"]
+    yr_list = []
+    for yr in sorted(annual_returns.keys()):
+        d = annual_returns[yr]
+        yr_list.append({"year": yr, "return_pct": round((d["end"] - d["start"]) / d["start"] * 100, 2)})
+
+    # Total return
+    total_ret = round((last_price - first_price) / first_price * 100, 2)
+
+    # CAGR
+    years = len(monthly) / 12
+    cagr = round((pow(last_price / first_price, 1 / years) - 1) * 100, 2) if years > 0 and first_price > 0 else 0
+
+    # Max drawdown
+    peak = closes[0]
+    max_dd = 0.0
+    for c in closes:
+        if c > peak: peak = c
+        dd = (peak - c) / peak * 100
+        if dd > max_dd: max_dd = dd
+    max_dd = round(max_dd, 2)
+
+    # Annualized volatility
+    monthly_rets = [(closes[i] - closes[i-1]) / closes[i-1] for i in range(1, len(closes))]
+    ann_vol = round(statistics.stdev(monthly_rets) * (12 ** 0.5) * 100, 2) if len(monthly_rets) > 1 else 0
+
+    # Sharpe ratio (rf=2%)
+    sharpe = round((cagr - 2.0) / ann_vol, 2) if ann_vol > 0 else 0
+
+    # Win rate
+    wins = sum(1 for r in monthly_rets if r > 0)
+    win_rate = round(wins / len(monthly_rets) * 100, 2) if monthly_rets else 0
+
+    return {
+        "current_price": last_price,
+        "total_return_pct": total_ret,
+        "cagr_pct": cagr,
+        "max_drawdown_pct": max_dd,
+        "annual_volatility_pct": ann_vol,
+        "sharpe_ratio": sharpe,
+        "win_rate_pct": win_rate,
+        "annual_returns": yr_list,
+    }
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     data = fetch_financial_data("600519")

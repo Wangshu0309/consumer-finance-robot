@@ -12,6 +12,8 @@ import RevenueBarChart from './components/RevenueBarChart';
 import MarginLineChart from './components/MarginLineChart';
 import CashFlowChart from './components/CashFlowChart';
 import TurnoverChart from './components/TurnoverChart';
+import PriceChart from './components/PriceChart';
+import ReturnsTable from './components/ReturnsTable';
 
 function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle?: string }) {
   return (
@@ -127,8 +129,24 @@ export default function App() {
             </div>
           </div>
 
-          {/* ⑤ AI 分析 */}
-          <div className="fade-in fade-in-delay-4">
+          {/* ⑤ 行情表现 */}
+          {state.data.price_data && state.data.price_data.length >= 2 && (
+            <div className="fade-in fade-in-delay-4">
+              <SectionHeader icon="📈" title="行情表现" subtitle="股价趋势与收益统计" />
+              <div className="card-gold p-5">
+                <p className="text-xs text-gold font-mono mb-3">股价走势（月线 · 前复权）</p>
+                <PriceChart data={state.data.price_data} />
+              </div>
+              {state.data.returns && state.data.returns.current_price && (
+                <div className="mt-4 card-gold p-5">
+                  <ReturnsTable data={state.data.returns} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ⑥ AI 分析 */}
+          <div className="fade-in fade-in-delay-5">
             <SectionHeader icon="📝" title="AI 投资分析" subtitle="智能生成投资建议" />
             <AnalysisText text={state.data.analysis} />
           </div>
